@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tiller: a macOS browser with an agent at the helm</title>
+<meta name="description" content="A small macOS browser built on Chromium, with a native Swift/AppKit interface and a built-in agent panel that can drive the browser.">
+<meta property="og:title" content="Tiller">
+<meta property="og:description" content="A Chromium browser for macOS with an agent at the helm.">
+<meta property="og:image" content="https://sorrycc.github.io/tiller/poster.jpg">
+<link rel="icon" type="image/png" href="icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Colors come from the app icon: sky, sea, boat, sun and the navy outline. */
+:root {
+  --ink: #0b2350; --text: #0b2350; --muted: #45597f;
+  --sky-top: #33b6f2; --sky-bottom: #a6e9ff;
+  --sea-1: #2a8cf0; --sea-2: #1463d6; --sea-3: #0b3f9e;
+  --sun: #ffd23f; --boat: #f08a24;
+  --page: #eef8ff; --card: #ffffff; --chip: #f3f8ff;
+  --shadow: #0b2350; --cloud: #ffffff; --cloud-under: #d9f4ff;
+  --code-bg: #0b2350; --code-text: #e3ecff;
+  --b: 3px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text: #eaf1ff; --muted: #a7b6d8;
+    --sky-top: #0a1230; --sky-bottom: #1d2f66;
+    --sea-1: #1f5fb8; --sea-2: #164895; --sea-3: #0d306e;
+    --page: #0a1226; --card: #142453; --chip: #1b2e63;
+    --ink: #050b1c; --shadow: #050b1c; --cloud: #8ea3d1; --cloud-under: #6c82b3;
+    --code-bg: #060d22;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: var(--page); color: var(--text); font: 16px/1.6 Inter, -apple-system, BlinkMacSystemFont, sans-serif; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+a { color: inherit; }
+.wrap { width: min(1100px, 100% - 32px); margin: 0 auto; }
+.pixel { font-family: Silkscreen, monospace; }
+svg.px-art { display: block; shape-rendering: crispEdges; }
+
+/* A pixel outline with notched corners and a hard drop shadow, all from box-shadow. */
+.px {
+  box-shadow:
+    0 calc(-1 * var(--b)) 0 var(--ink), 0 var(--b) 0 var(--ink),
+    calc(-1 * var(--b)) 0 0 var(--ink), var(--b) 0 0 var(--ink),
+    4px 1px 0 var(--shadow), 4px 7px 0 var(--shadow), 1px 4px 0 var(--shadow), 7px 4px 0 var(--shadow);
+}
+.px-flat {
+  box-shadow:
+    0 calc(-1 * var(--b)) 0 var(--ink), 0 var(--b) 0 var(--ink),
+    calc(-1 * var(--b)) 0 0 var(--ink), var(--b) 0 0 var(--ink);
+}
+
+/* ---------- sky ---------- */
+.sky { position: relative; overflow: hidden; background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bottom) 100%); }
+nav { position: relative; z-index: 3; display: flex; align-items: center; gap: 24px; height: 72px; }
+.brand { display: flex; align-items: center; gap: 10px; font-family: Silkscreen, monospace; font-weight: 700; font-size: 22px; text-decoration: none; color: var(--text); }
+.brand img { width: 32px; height: 32px; image-rendering: pixelated; }
+nav .links { margin-left: auto; display: flex; gap: 22px; font-family: Silkscreen, monospace; font-size: 15px; }
+nav .links a { text-decoration: none; color: var(--text); }
+nav .links a:hover { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 5px; }
+.sun, .moon { position: absolute; right: 9%; top: 92px; z-index: 1; }
+.moon, .stars { display: none; }
+.cloud { position: absolute; z-index: 1; animation: drift linear infinite; }
+@keyframes drift { from { transform: translateX(-260px); } to { transform: translateX(calc(100vw + 260px)); } }
+.stars i { position: absolute; width: 4px; height: 4px; background: #fff7d6; animation: twinkle 2.4s steps(2) infinite; }
+@keyframes twinkle { 50% { opacity: .25; } }
+@media (prefers-color-scheme: dark) {
+  .sun { display: none; } .moon, .stars { display: block; }
+  .cloud { opacity: .35; }
+}
+
+.hero { position: relative; z-index: 2; text-align: center; padding: 40px 0 270px; }
+h1 { font-family: Silkscreen, monospace; font-weight: 700; font-size: clamp(64px, 13vw, 132px); line-height: .9; letter-spacing: .02em; color: var(--text);
+  text-shadow: 6px 6px 0 #ffffff; margin-bottom: 22px; }
+@media (prefers-color-scheme: dark) { h1 { text-shadow: 6px 6px 0 var(--sea-2); } }
+.tag { font-size: clamp(20px, 3vw, 28px); font-weight: 700; letter-spacing: -.015em; }
+.lede { max-width: 620px; margin: 12px auto 0; font-size: 17px; color: var(--text); opacity: .82; }
+.ctas { display: flex; gap: 22px; justify-content: center; margin-top: 34px; flex-wrap: wrap; }
+.btn { display: inline-flex; align-items: center; gap: 10px; padding: 14px 22px; font-family: Silkscreen, monospace; font-size: 18px; line-height: 1; text-decoration: none; color: #0b2350;
+  transition: transform .08s steps(2); }
+.btn svg { width: 18px; height: 18px; }
+.btn.pri { background: var(--sun); }
+.btn.sec { background: #ffffff; }
+.btn:hover { transform: translate(-2px, -2px); }
+.btn:active { transform: translate(4px, 4px); }
+.btn:active.px { box-shadow:
+    0 calc(-1 * var(--b)) 0 var(--ink), 0 var(--b) 0 var(--ink),
+    calc(-1 * var(--b)) 0 0 var(--ink), var(--b) 0 0 var(--ink); }
+.btn:focus-visible { outline: 3px dashed var(--boat); outline-offset: 8px; }
+.req { margin-top: 26px; font-size: 14px; color: var(--text); opacity: .75; }
+
+/* ---------- sea ---------- */
+.waves { position: absolute; left: 0; right: 0; bottom: 0; height: 200px; z-index: 2; }
+.waves .band { position: absolute; left: 0; width: 3840px; animation: roll linear infinite; }
+.waves .band:nth-child(1) { top: 0; animation-duration: 40s; }
+.waves .band:nth-child(2) { top: 40px; animation-duration: 28s; animation-direction: reverse; }
+.waves .band:nth-child(3) { top: 84px; animation-duration: 20s; }
+@keyframes roll { from { transform: translateX(0); } to { transform: translateX(-1920px); } }
+.boat { position: absolute; left: 50%; bottom: 112px; width: 108px; margin-left: -54px; z-index: 3; image-rendering: pixelated; animation: bob 3s steps(6) infinite; }
+.waves .band:nth-child(2), .waves .band:nth-child(3) { z-index: 4; }
+@keyframes bob { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-10px) rotate(3deg); } }
+
+.sea { background: var(--sea-3); padding: 0; position: relative; }
+.sea .label { text-align: center; color: #ffffff; font-family: Silkscreen, monospace; font-size: 15px; margin-bottom: 22px; opacity: .9; }
+.video { position: relative; max-width: 980px; margin: 0 auto; background: #0b2350; aspect-ratio: 16 / 9; --ink: #050b1c; --shadow: #050b1c; }
+.video video { display: block; width: 100%; height: 100%; object-fit: cover; }
+.sound { position: absolute; right: 16px; bottom: 16px; display: flex; align-items: center; gap: 8px; padding: 8px 12px; border: 0; background: var(--sun); color: #0b2350;
+  font: 13px Silkscreen, monospace; cursor: pointer; --ink: #0b2350; --shadow: #0b2350; --b: 2px; }
+.sound:active { transform: translate(3px, 3px); }
+.sound svg { width: 14px; height: 14px; }
+.shore { display: block; width: 100%; height: 48px; margin-top: 56px; }
+
+/* ---------- sections ---------- */
+section { padding: 72px 0 16px; }
+.kicker { display: inline-block; padding: 6px 12px; background: var(--ink); color: var(--sun); font-family: Silkscreen, monospace; font-size: 14px; line-height: 1; }
+@media (prefers-color-scheme: dark) { .kicker { background: var(--sun); color: #0b2350; } }
+h2 { font-family: Silkscreen, monospace; font-weight: 700; font-size: clamp(28px, 4.6vw, 44px); line-height: 1.15; margin: 18px 0 12px; }
+.sub { color: var(--muted); max-width: 640px; font-size: 17px; }
+.grid { display: grid; gap: 26px; margin-top: 36px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.card { background: var(--card); padding: 22px; min-width: 0; }
+.card h3 { font-size: 17px; font-weight: 700; margin: 14px 0 6px; }
+.card p { color: var(--muted); font-size: 15px; }
+.icon { width: 36px; height: 36px; color: var(--sea-2); }
+@media (prefers-color-scheme: dark) { .icon { color: var(--sun); } }
+.card.wide { grid-column: span 2; }
+.slots { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 18px; }
+.slot { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--chip); font-weight: 600; font-size: 14px; --b: 2px; }
+.slot img { width: 20px; height: 20px; }
+.split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 26px; margin-top: 36px; }
+pre { background: var(--code-bg); color: var(--code-text); padding: 16px 18px; margin-top: 14px; font: 14px/1.7 'JetBrains Mono', ui-monospace, monospace; overflow-x: auto; --ink: #050b1c; --b: 2px; }
+pre .c { color: #7f8db0; } pre .p { color: #7ee787; } pre .k { color: #79c0ff; } pre .s { color: #ffd23f; }
+.cur { display: inline-block; width: .6em; height: 1.1em; vertical-align: -.2em; background: #7ee787; animation: twinkle 1s steps(1) infinite; }
+code { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .9em; }
+.docs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 22px; margin-top: 30px; }
+.doc { display: block; padding: 14px 16px; background: var(--card); text-decoration: none; min-width: 0; --b: 2px; }
+.doc b { display: block; font-family: Silkscreen, monospace; font-weight: 400; font-size: 15px; }
+.doc span { color: var(--muted); font-size: 13px; }
+.doc:hover { background: var(--chip); }
+footer { margin-top: 80px; background: var(--sea-3); color: #dfe9ff; }
+footer .wrap { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; padding: 26px 0 34px; font-family: Silkscreen, monospace; font-size: 14px; }
+footer img { width: 26px; height: 26px; image-rendering: pixelated; }
+footer .r { margin-left: auto; display: flex; gap: 20px; }
+
+@media (max-width: 860px) {
+  .grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .split, .docs { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 560px) {
+  nav .links a:not(.gh) { display: none; }
+  .grid { grid-template-columns: minmax(0, 1fr); }
+  .card.wide { grid-column: auto; }
+  .sun, .moon { display: none !important; }
+  #cl1, #cl2 { display: none; }
+  .hero { padding-bottom: 250px; }
+  .btn { font-size: 16px; }
+  .sound span { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  html { scroll-behavior: auto; }
+}
+</style>
+</head>
+<body>
+<div class="sky">
+  <div class="stars" id="stars"></div>
+  <div class="sun" id="sun"></div>
+  <div class="moon" id="moon"></div>
+  <div class="cloud" id="cl1" style="top:150px;animation-duration:70s;animation-delay:-20s"></div>
+  <div class="cloud" id="cl2" style="top:260px;animation-duration:95s;animation-delay:-70s"></div>
+  <div class="cloud" id="cl3" style="top:96px;animation-duration:120s;animation-delay:-95s"></div>
+  <div class="wrap">
+    <nav>
+      <a class="brand" href="#"><img src="icon.png" alt="">Tiller</a>
+      <div class="links"><a href="#features">Browser</a><a href="#agent">Agent</a><a href="#developers">Developers</a><a class="gh" href="https://github.com/sorrycc/tiller">GitHub</a></div>
+    </nav>
+    <header class="hero">
+      <h1>Tiller</h1>
+      <p class="tag">A Chromium browser with an agent at the helm</p>
+      <p class="lede">A small macOS browser built on Chromium, with a native Swift/AppKit interface and a built-in agent panel that can drive the browser.</p>
+      <div class="ctas">
+        <a class="btn pri px" href="https://github.com/sorrycc/tiller/releases/latest">
+          <svg class="px-art" viewBox="0 0 9 9" fill="currentColor"><path d="M3 0h3v4h2v1H7v1H6v1H5v1H4V7H3V6H2V5H1V4h2z"/><path d="M0 8h9v1H0z"/></svg>Download for macOS</a>
+        <a class="btn sec px" href="https://github.com/sorrycc/tiller">
+          <svg class="px-art" viewBox="0 0 9 9" fill="currentColor"><path d="M2 0h5v1h1v1h1v5H8v1H7v1H6V7h1V6H6V5H3v1H2v1h1v2H2V8H1V7H0V2h1V1h1z"/></svg>View on GitHub</a>
+      </div>
+      <p class="req">Free and open source · macOS 26 or later on Apple silicon · MIT license</p>
+    </header>
+  </div>
+  <img class="boat" src="icon.png" alt="Tiller icon: a pixel-art sailboat">
+  <div class="waves" id="waves"></div>
+</div>
+
+<div class="sea">
+  <div class="wrap">
+    <p class="label">▸ Watch the tour · 80 seconds</p>
+    <div class="video px">
+      <video id="promo" src="promo.mp4" poster="poster.jpg" autoplay muted loop playsinline preload="metadata"></video>
+      <button class="sound px" id="sound" type="button" aria-label="Turn sound on">
+        <svg class="px-art" id="sndIco" viewBox="0 0 9 9" fill="currentColor"></svg><span id="sndTxt">Sound on</span>
+      </button>
+    </div>
+  </div>
+  <svg class="shore px-art" id="shore" viewBox="0 0 1920 48" preserveAspectRatio="none"></svg>
+</div>
+
+<div class="wrap">
+  <section id="features">
+    <span class="kicker">▸ The browser</span>
+    <h2>Chromium inside, a Mac app outside</h2>
+    <p class="sub">Pages render with Chromium through CEF. The window, tabs and menus are AppKit, so it looks and behaves like the rest of your Mac.</p>
+    <div class="grid">
+      <div class="card px"><svg class="icon px-art" data-icon="window"></svg>
+        <h3>Chromium engine, native shell</h3><p>Every site works as it does in Chrome, inside a window drawn by Swift and AppKit.</p></div>
+      <div class="card px"><svg class="icon px-art" data-icon="sidebar"></svg>
+        <h3>Tabs and session restore</h3><p>Tabs along the top or in a sidebar. Open and recently closed tabs survive restarts and crashes.</p></div>
+      <div class="card px"><svg class="icon px-art" data-icon="import"></svg>
+        <h3>Import from Chrome</h3><p>Cookies, saved passwords, history, extensions, search engine and homepage come over in one sheet.</p></div>
+      <div class="card px"><svg class="icon px-art" data-icon="puzzle"></svg>
+        <h3>Chrome extensions</h3><p>Add unpacked folders or CRX files. Content scripts, background workers and popups run.</p></div>
+      <div class="card px"><svg class="icon px-art" data-icon="person"></svg>
+        <h3>Profiles</h3><p>Each profile has its own site data, history, passwords, chats, theme and accent color.</p></div>
+      <div class="card px"><svg class="icon px-art" data-icon="search"></svg>
+        <h3>The usual browser things</h3><p>Find in page, zoom, print, downloads with progress, full screen, developer tools and view source.</p></div>
+    </div>
+  </section>
+
+  <section id="agent">
+    <span class="kicker">▸ The agent panel</span>
+    <h2>Hand over the helm with ⌘⇧S</h2>
+    <p class="sub">Chat with a coding agent in a side panel that controls the browser. It opens tabs, reads pages, clicks and types in your real tabs, and answers in rich markdown.</p>
+    <div class="grid">
+      <div class="card wide px"><svg class="icon px-art" data-icon="sparkle"></svg>
+        <h3>Five agents, one panel</h3><p>Pick one per chat, with its own model, effort, fast mode and built-in tools. Claude Code can also run against your own provider's API.</p>
+        <div class="slots">
+          <span class="slot px-flat"><img src="agents/qodercli.svg" alt="">Qoder CLI</span>
+          <span class="slot px-flat"><img src="agents/claude.svg" alt="">Claude Code</span>
+          <span class="slot px-flat"><img src="agents/codex.svg" alt="">Codex</span>
+          <span class="slot px-flat"><img src="agents/agy.svg" alt="">Antigravity CLI</span>
+          <span class="slot px-flat"><img src="agents/grok.svg" alt="">Grok Build</span>
+        </div></div>
+      <div class="card px"><svg class="icon px-art" data-icon="queue"></svg>
+        <h3>Queue while it works</h3><p>Write your next message during a turn. It waits above the field and goes when the turn finishes.</p></div>
+      <div class="card px"><svg class="icon px-art" data-icon="slash"></svg>
+        <h3>Skills with /</h3><p>Call skills from your own folders, or from a skill library every agent shares. Agents can write new skills for you.</p></div>
+      <div class="card wide px"><svg class="icon px-art" data-icon="calendar"></svg>
+        <h3>Prompts on a schedule</h3><p>Run a prompt every few minutes, every morning or on a cron expression, skills included. Set them up in Settings or just ask the agent. Runs happen in the background without taking a tab, and a notification tells you how each one went.</p></div>
+    </div>
+  </section>
+
+  <section id="developers">
+    <span class="kicker">▸ For developers</span>
+    <h2>The same tools, for any agent or script</h2>
+    <p class="sub">A stdio MCP server and the <code>tiller</code> command expose the browser tools the panel uses, so external agents and scripts can drive Tiller too.</p>
+    <div class="split">
+      <div class="card px"><svg class="icon px-art" data-icon="terminal"></svg>
+        <h3>The <code>tiller</code> command</h3><p>Install it from Tiller › Install Command Line Tool…</p>
+<pre class="px-flat"><span class="p">❯</span> tiller new example.com    <span class="c"># open a tab and wait for the load</span>
+<span class="p">❯</span> tiller read               <span class="c"># text with numbered links and fields</span>
+<span class="p">❯</span> tiller click 3
+<span class="p">❯</span> tiller type 5 "hello" --submit
+<span class="p">❯</span> <span class="cur"></span></pre></div>
+      <div class="card px"><svg class="icon px-art" data-icon="plug"></svg>
+        <h3>The MCP server</h3><p>Point any MCP client at the server inside the app.</p>
+<pre class="px-flat">{ <span class="k">"mcpServers"</span>: { <span class="k">"tiller"</span>: {
+    <span class="k">"command"</span>: <span class="s">"/Applications/Tiller.app/
+      Contents/MacOS/tiller_mcp"</span>
+} } }</pre></div>
+    </div>
+    <div class="card px" style="margin-top:26px"><svg class="icon px-art" data-icon="hammer"></svg>
+      <h3>Build from source</h3><p>You need the Swift toolchain, Rust, Ninja and CEF 154. The README has the one-time setup.</p>
+<pre class="px-flat"><span class="p">❯</span> git clone https://github.com/sorrycc/tiller && cd tiller
+<span class="p">❯</span> scripts/bundle.sh        <span class="c"># release build; pass `debug` for a debug build</span>
+<span class="p">❯</span> open build/Tiller.app</pre></div>
+    <div class="docs">
+      <a class="doc px-flat" href="https://github.com/sorrycc/tiller/blob/master/docs/browser.md"><b>Using the browser</b><span>Tabs, history, passwords, Chrome import, profiles</span></a>
+      <a class="doc px-flat" href="https://github.com/sorrycc/tiller/blob/master/docs/agent.md"><b>Agent panel</b><span>Chats, skills, schedules, permissions</span></a>
+      <a class="doc px-flat" href="https://github.com/sorrycc/tiller/blob/master/docs/tools.md"><b>Browser tools</b><span>MCP server, CLI, launch arguments</span></a>
+      <a class="doc px-flat" href="https://github.com/sorrycc/tiller/blob/master/docs/settings-and-data.md"><b>Settings and data</b><span>Settings, switches, data folder</span></a>
+    </div>
+  </section>
+</div>
+
+<footer>
+  <svg class="px-art" id="footWave" viewBox="0 0 1920 36" preserveAspectRatio="none" style="width:100%;height:36px;margin-top:-35px"></svg>
+  <div class="wrap">
+    <img src="icon.png" alt=""><span>Tiller · MIT license</span>
+    <div class="r"><a href="https://github.com/sorrycc/tiller">GitHub</a><a href="https://github.com/sorrycc/tiller/releases">Releases</a><a href="https://github.com/sorrycc/tiller/issues">Issues</a></div>
+  </div>
+</footer>
+
+<script>
+const $ = id => document.getElementById(id);
+
+// Pixel art from rows of characters; each character maps to a color, or is left empty.
+function pixelSvg(rows, colors, px) {
+  const h = rows.length, w = Math.max(...rows.map(r => r.length));
+  let rects = '';
+  rows.forEach((r, y) => [...r].forEach((c, x) => { if (colors[c]) rects += `<rect x="${x}" y="${y}" width="1.02" height="1.02" fill="${colors[c]}"/>`; }));
+  const size = px ? ` width="${w * px}" height="${h * px}"` : '';
+  return `<svg class="px-art"${size} viewBox="0 0 ${w} ${h}">${rects}</svg>`;
+}
+
+// ---------- sky: sun, moon, clouds, stars ----------
+const sun = [];
+for (let y = 0; y < 15; y++) {
+  let r = '';
+  for (let x = 0; x < 15; x++) {
+    const d = Math.hypot(x - 7, y - 7);
+    const ray = (x === 7 || y === 7 || x === y || x + y === 14) && d > 6.3 && d < 7.6;
+    r += d < 3 ? 'c' : d < 5 ? 's' : d < 5.8 ? 'e' : ray ? 's' : ' ';
+  }
+  sun.push(r);
+}
+$('sun').innerHTML = pixelSvg(sun, { c: '#fff6c2', s: '#ffd23f', e: '#f5b50a' }, 9);
+const moon = [];
+for (let y = 0; y < 13; y++) {
+  let r = '';
+  for (let x = 0; x < 13; x++) {
+    const inA = Math.hypot(x - 6, y - 6) < 6, inB = Math.hypot(x - 9, y - 4.5) < 5;
+    r += inA && !inB ? 'm' : ' ';
+  }
+  moon.push(r);
+}
+$('moon').innerHTML = pixelSvg(moon, { m: '#fff2b8' }, 9);
+const cloud = ['     ####        ', '   ########  ##  ', ' ############### ', '#################', ' ooooooooooooooo '];
+['cl1', 'cl2', 'cl3'].forEach((id, i) => $(id).innerHTML = pixelSvg(cloud, { '#': 'var(--cloud)', o: 'var(--cloud-under)' }, [12, 9, 7][i]));
+let seed = 7;
+const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+$('stars').innerHTML = Array.from({ length: 46 }, () =>
+  `<i style="left:${(rand() * 100).toFixed(1)}%;top:${(rand() * 58).toFixed(1)}%;animation-delay:-${(rand() * 2.4).toFixed(2)}s"></i>`).join('');
+
+// ---------- sea: stepped waves; the period divides 1920, so the scroll loops seamlessly ----------
+function wave(color, base, amp, phase, foam, W = 3840, H = 220) {
+  let d = `M0 ${H}`;
+  for (let x = 0; x <= W; x += 24) {
+    const y = Math.round((base + amp * Math.sin((x / 480) * Math.PI * 2 + phase)) / 12) * 12;
+    d += ` L${x} ${y} L${x + 24} ${y}`;
+  }
+  d += ` L${W} ${H} Z`;
+  return `<svg class="px-art band" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><path d="${d}" fill="${color}"/>` +
+    (foam ? `<path d="${d}" fill="none" stroke="#ffffff" stroke-opacity=".85" stroke-width="6" stroke-dasharray="48 24"/>` : '') + '</svg>';
+}
+$('waves').innerHTML = wave('var(--sea-1)', 30, 18, 0, true) + wave('var(--sea-2)', 30, 16, 1.8, true) + wave('var(--sea-3)', 30, 12, 3.4, false);
+// The sea ends in a stepped shoreline into the page, and the footer rises out of one.
+function steps(H, base, amp, period) {
+  let d = `M0 0 L1920 0 L1920 ${H}`;
+  for (let x = 1920; x >= 0; x -= 32) d += ` L${x} ${Math.round((base + amp * Math.sin(x / period * Math.PI * 2)) / 8) * 8} L${x - 32} ${Math.round((base + amp * Math.sin(x / period * Math.PI * 2)) / 8) * 8}`;
+  return d + ` L0 ${H} Z`;
+}
+$('shore').innerHTML = `<rect width="1920" height="48" fill="var(--page)"/><path d="${steps(48, 16, 12, 640)}" fill="var(--sea-3)"/>`;
+$('footWave').innerHTML = (() => {
+  let d = 'M0 36 L1920 36';
+  for (let x = 1920; x >= 0; x -= 32) { const y = Math.round((18 + 10 * Math.sin(x / 480 * Math.PI * 2)) / 8) * 8; d += ` L${x} ${y} L${x - 32} ${y}`; }
+  return `<path d="${d} Z" fill="var(--sea-3)"/>`;
+})();
+
+// ---------- 12×12 pixel icons, in the card's icon color ----------
+const ICONS = {
+  window:   ['############', '#  # # #   #', '############', '#          #', '#  ####    #', '#          #', '#  ######  #', '#  ######  #', '#          #', '############'],
+  sidebar:  ['############', '#   #      #', '# # #      #', '#   #      #', '# # #      #', '#   #      #', '# # #      #', '#   #      #', '############'],
+  import:   ['     ##     ', '     ##     ', '     ##     ', '  ## ## ##  ', '   ######   ', '    ####    ', '     ##     ', '#          #', '#          #', '############'],
+  puzzle:   ['   ##       ', '  ####      ', '##########  ', '#        #  ', '#        ### ', '#        ####', '#        ### ', '#        #  ', '##########  '],
+  person:   ['    ####    ', '   ######   ', '   ######   ', '   ######   ', '    ####    ', '            ', '  ########  ', ' ########## ', ' ########## ', ' ########## '],
+  search:   ['  ####      ', ' #    #     ', '#      #    ', '#      #    ', '#      #    ', ' #    #     ', '  ######    ', '      ###   ', '       ###  ', '        ### '],
+  sparkle:  ['    #       ', '    #       ', '   ###      ', '#########   ', '   ###      ', '    #   #   ', '    #   #   ', '      ##### ', '        #   ', '        #   '],
+  queue:    ['##########  ', '            ', '#######     ', '            ', '########    ', '            ', '#  #  #  #  ', '            ', '##########  '],
+  slash:    ['         ## ', '        ##  ', '       ##   ', '      ##    ', '     ##     ', '    ##      ', '   ##       ', '  ##        ', ' ##         '],
+  calendar: ['  #    #    ', '##########  ', '#        #  ', '##########  ', '#        #  ', '# ## ## ##  ', '#        #  ', '# ## ##  #  ', '##########  '],
+  terminal: ['############', '#          #', '# #        #', '#  #       #', '#   #      #', '#  #       #', '# #  ####  #', '#          #', '############'],
+  plug:     ['  #   #     ', '  #   #     ', '#########   ', '#########   ', ' #######    ', '  #####     ', '    #       ', '    #       ', '    #       '],
+  hammer:   [' ######     ', '#######     ', ' ######     ', '   ##       ', '   ##       ', '   ##       ', '   ##       ', '   ##       ', '   ##       '],
+};
+document.querySelectorAll('[data-icon]').forEach(el => {
+  const tmp = document.createElement('div');
+  tmp.innerHTML = pixelSvg(ICONS[el.dataset.icon], { '#': 'currentColor' });
+  el.setAttribute('viewBox', tmp.firstChild.getAttribute('viewBox'));
+  el.innerHTML = tmp.firstChild.innerHTML;
+});
+
+// ---------- video: starts muted so it can autoplay; the button turns sound on and off ----------
+const video = $('promo'), btn = $('sound');
+const SPEAKER = 'M0 3h2V2h1V1h1V0h1v9H4V8H3V7H2V6H0z';
+const OFF = SPEAKER + 'M6 3h1v1H6zM8 3h1v1H8zM7 4h1v1H7zM6 5h1v1H6zM8 5h1v1H8z';
+const ON = SPEAKER + 'M6 3h1v3H6zM8 1h1v7H8z';
+const paint = () => {
+  $('sndIco').innerHTML = `<path d="${video.muted ? OFF : ON}"/>`;
+  $('sndTxt').textContent = video.muted ? 'Sound on' : 'Sound off';
+  btn.setAttribute('aria-label', video.muted ? 'Turn sound on' : 'Turn sound off');
+};
+btn.addEventListener('click', () => {
+  video.muted = !video.muted;
+  if (!video.muted) { video.currentTime = 0; video.play(); }
+  paint();
+});
+paint();
+// Respect Reduce Motion: no autoplay, the visitor starts the video.
+if (matchMedia('(prefers-reduced-motion: reduce)').matches) { video.removeAttribute('autoplay'); video.pause(); video.controls = true; }
+</script>
+</body>
+</html>
