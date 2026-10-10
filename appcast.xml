@@ -4,6 +4,15 @@
     <title>Tiller</title>
     <link>https://github.com/sorrycc/tiller/releases</link>
     <item>
+      <title>0.1.3</title>
+      <pubDate>Sat, 10 Oct 2026 03:44:24 GMT</pubDate>
+      <sparkle:version>95</sparkle:version>
+      <sparkle:shortVersionString>0.1.3</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <sparkle:fullReleaseNotesLink>https://github.com/sorrycc/Tiller/releases/tag/v0.1.3</sparkle:fullReleaseNotesLink>
+      <enclosure url="https://github.com/sorrycc/Tiller/releases/download/v0.1.3/Tiller-0.1.3.zip" type="application/octet-stream" sparkle:edSignature="5dFF2dP/Y9Ef70skjFwind3FcuRpEmy30AKsCXzJ9/rCi5TUuGgLRqV32BorbOA3leHbCowdu8qM4GSXZ4WpCw==" length="130510153" />
+    </item>
+    <item>
       <title>0.1.2</title>
       <pubDate>Sat, 10 Oct 2026 02:42:49 GMT</pubDate>
       <sparkle:version>93</sparkle:version>
