@@ -43,9 +43,11 @@ const char *tiller_core_version(void);
 // CEF, keeping Chromium's own files in `data_dir` (the folder holding the
 // profiles), the global request context's data in `cache_path` inside it, and
 // loading the unpacked extensions in `extensions`, one folder per line (may be
-// NULL), into every profile. Call first in main, before touching NSApp.
+// NULL), into every profile. A positive `remote_debugging_port` enables CDP on
+// loopback unless the command line sets its own port. Call first in main,
+// before touching NSApp.
 // Returns 0 or an exit code.
-int tiller_core_start(const char *data_dir, const char *cache_path, const char *extensions);
+int tiller_core_start(const char *data_dir, const char *cache_path, const char *extensions, int remote_debugging_port);
 
 // Creates a profile's request context, with its Chromium data in `cache_path`
 // inside `data_dir`. `ready` runs on the main thread once browsers can be

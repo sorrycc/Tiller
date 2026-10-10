@@ -4,7 +4,7 @@ Tiller's settings, the switches it passes to Chromium, and where it stores data.
 
 ## Settings
 
-Tiller > Settings… (Cmd+,) opens the Settings of the front window's profile. It has seven panes: General, Passwords, Extensions (see [Extensions](browser.md#extensions)), Agent, Skills (see [Skills](agent.md#tillers-skill-library)), Scheduled (see [Scheduled prompts](agent.md#scheduled-prompts)) and Profiles (see [Profiles](browser.md#profiles)). Changes are saved as you make them, and apply to that profile only, except the default browser, which macOS keeps for the app, and the appearance, accent color, agent shortcut, updates and extensions, which every profile shares.
+Tiller > Settings… (Cmd+,) opens the Settings of the front window's profile. It has seven panes: General, Passwords, Extensions (see [Extensions](browser.md#extensions)), Agent, Skills (see [Skills](agent.md#tillers-skill-library)), Scheduled (see [Scheduled prompts](agent.md#scheduled-prompts)) and Profiles (see [Profiles](browser.md#profiles)). Changes are saved as you make them, and apply to that profile only, except the default browser, which macOS keeps for the app, and the appearance, accent color, agent shortcut, updates, extensions and remote debugging, which every profile shares.
 
 | Pane | Setting | Default | Takes effect |
 |---|---|---|---|
@@ -18,6 +18,7 @@ Tiller > Settings… (Cmd+,) opens the Settings of the front window's profile. I
 | General | Search engine: Google, Bing, DuckDuckGo or Custom | Google | next search |
 | General | Custom search URL, with `%s` for the query | empty | next search; Google is used while it isn't a valid http(s) URL with `%s` |
 | General | Updates: Check automatically, and Include beta versions. Only in released builds, which also have Tiller > Check for Updates… | checks automatically, no betas | right away, for every profile |
+| General | Allow remote debugging (CDP), stored as `remoteDebuggingEnabled` | off | next launch, on `127.0.0.1:9222`, for every profile |
 | Agent | New chats use: Qoder CLI, Claude Code, Codex, Antigravity CLI or Grok Build | Qoder CLI | next new chat; same as the picker in the panel |
 | Agent | Chat tabs: how many chats the panel keeps open at once, 1 to 9 | 3 | right away; tabs already open stay |
 | Agent | Show and hide shortcut: click, then press a combination with Cmd or Ctrl. Delete clears it; one already in a menu is refused | Cmd+Shift+S | right away, for every profile |
@@ -35,6 +36,7 @@ Tiller passes these switches to Chromium:
 
 - `--use-mock-keychain`, so it never asks for the login keychain password. The cost is that cookies are encrypted with a fixed key instead of one kept in the keychain.
 - `--disable-backgrounding-occluded-windows`, so a window covered by other apps still counts as visible. Otherwise Chromium drops the agent's mouse and key input while you work elsewhere. The cost is that a covered Tiller window keeps drawing.
+- With remote debugging on in Settings > General, `--remote-debugging-port=9222`, unless Tiller was launched with an explicit `--remote-debugging-port`. An explicit command-line switch enables CDP even while the setting is off. The setting is off by default because any local process could otherwise read and change every profile's pages and sign-in data through CDP.
 - With extensions on, `--load-extension=<folders>` for the enabled [extensions](browser.md#extensions), which Chromium loads into every profile, and `--noerrdialogs`. Without it, an extension Chromium can't load asks for an error dialog, which hangs Tiller at launch. Chromium writes the error to `chrome_debug.log` in the `Chromium` folder instead, and Settings > Extensions reads it from there. A folder whose path has a comma can't be passed, since Chromium splits the list on commas.
 
 ## User agent

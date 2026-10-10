@@ -132,12 +132,18 @@ enum AccentTheme: String, CaseIterable {
 }
 
 /// Settings that apply to the whole app, in its own user defaults: how
-/// windows look and the agent panel's shortcut, which every profile's window
-/// shares, since one process runs them all.
+/// windows look, the agent panel's shortcut and whether CDP is enabled, which
+/// every profile's window shares since one process runs them all.
 enum Settings {
     static var defaults: UserDefaults { .standard }
 
     static let defaultHomepage = "https://www.google.com/"
+    static let remoteDebuggingEnabledKey = "remoteDebuggingEnabled"
+
+    static var remoteDebuggingEnabled: Bool {
+        get { defaults.bool(forKey: remoteDebuggingEnabledKey) }
+        set { defaults.set(newValue, forKey: remoteDebuggingEnabledKey) }
+    }
 
     static var appearance: Appearance {
         get { defaults.string(forKey: "appearance").flatMap(Appearance.init) ?? .system }
