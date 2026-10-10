@@ -98,6 +98,9 @@ double tiller_browser_zoom_factor(int id);
 // each new size through the auto_resize callback. For extension popups.
 void tiller_browser_set_auto_resize(int id, int min_width, int min_height, int max_width, int max_height);
 
+// Stops sizing the browser to its page; it follows its view's size again.
+void tiller_browser_disable_auto_resize(int id);
+
 // Finds text in the page. find_next continues the current search in the
 // given direction. Results arrive through the find_result callback.
 void tiller_browser_find(int id, const char *text, bool forward, bool find_next);

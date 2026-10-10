@@ -255,6 +255,16 @@ pub extern "C" fn tiller_browser_set_auto_resize(id: c_int, min_width: c_int, mi
     }
 }
 
+/// Stops sizing the browser to its page, so it follows its view's size again.
+#[unsafe(no_mangle)]
+pub extern "C" fn tiller_browser_disable_auto_resize(id: c_int) {
+    if let Some(host) = browser::get(id).and_then(|b| b.host()) {
+        // CEF's C API drops the call if either size is null, even to turn it off.
+        let zero = Size { width: 0, height: 0 };
+        host.set_auto_resize_enabled(0, Some(&zero), Some(&zero));
+    }
+}
+
 /// Finds `text` in the page and highlights the matches. `find_next` moves to
 /// the next or previous match of the same text. Results arrive through
 /// `find_result`.

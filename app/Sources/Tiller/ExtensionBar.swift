@@ -129,6 +129,13 @@ private final class ExtensionButton: NSButton {
 /// sizes popups, from 25×25 up to 800×600 points.
 @MainActor
 final class ExtensionPopover: NSObject, NSPopoverDelegate, TabDelegate {
+    private static let minSize = NSSize(width: 25, height: 25)
+    private static let maxSize = NSSize(width: 800, height: 600)
+    private static let collapsedWidthThreshold: CGFloat = 100
+    private static let fallbackSize = NSSize(width: 400, height: 600)
+    private static let collapseCheckDelay: TimeInterval = 0.3
+    private static let fixedSizeDefaultsKey = "extensionPopupsWithFixedSize"
+
     /// The popup opened a link in a new tab.
     var onOpenTab: ((String, Bool) -> Void)?
     /// The popup is gone, browser and all.
@@ -141,11 +148,19 @@ final class ExtensionPopover: NSObject, NSPopoverDelegate, TabDelegate {
     private let popover = NSPopover()
     private let tab: Tab
     private var closing = false
+    private var latestSize: NSSize = .zero
+    private var fallbackEnabled = false
+    private var collapseCheck: DispatchWorkItem?
+    private var revealTimeout: DispatchWorkItem?
+    private var revealed = false
+    /// The profile's settings, which remember popups that need the fixed size.
+    private let defaults: UserDefaults
 
     /// The popup runs in `profile`'s request context, like its tabs.
     init(manifest: ExtensionManifest, profile: ProfileContext) {
         self.manifest = manifest
         tab = Tab(profile: profile)
+        defaults = profile.settings.defaults
         super.init()
     }
 
@@ -155,17 +170,40 @@ final class ExtensionPopover: NSObject, NSPopoverDelegate, TabDelegate {
         let controller = NSViewController()
         controller.view = container
         popover.contentViewController = controller
-        popover.contentSize = container.frame.size
+        fallbackEnabled = (defaults.stringArray(forKey: Self.fixedSizeDefaultsKey) ?? []).contains(manifest.id)
+        popover.contentSize = fallbackEnabled ? Self.fallbackSize : container.frame.size
         popover.behavior = .transient
         popover.delegate = self
         popover.show(relativeTo: anchor.bounds, of: anchor, preferredEdge: .minY)
+        if !fallbackEnabled {
+            popover.contentViewController?.view.window?.alphaValue = 0
+            let timeout = DispatchWorkItem { [weak self] in
+                self?.reveal()
+            }
+            revealTimeout = timeout
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1, execute: timeout)
+        }
         // The browser needs its view in a window, so it starts once shown.
         tab.hostView.frame = container.bounds
         tab.hostView.autoresizingMask = [.width, .height]
         container.addSubview(tab.hostView)
         tab.delegate = self
         tab.start(url: url)
-        tab.autoResize(min: NSSize(width: 25, height: 25), max: NSSize(width: 800, height: 600))
+        if fallbackEnabled {
+            reveal()
+        } else {
+            tab.autoResize(min: Self.minSize, max: Self.maxSize)
+        }
+    }
+
+    /// Shows a popup that was hidden until its size settled, so a first narrow
+    /// layout doesn't flash on screen.
+    private func reveal() {
+        guard !closing, !revealed else { return }
+        revealed = true
+        revealTimeout?.cancel()
+        revealTimeout = nil
+        popover.contentViewController?.view.window?.alphaValue = 1
         tab.focus()
     }
 
@@ -174,6 +212,10 @@ final class ExtensionPopover: NSObject, NSPopoverDelegate, TabDelegate {
     }
 
     func popoverDidClose(_ notification: Notification) {
+        collapseCheck?.cancel()
+        collapseCheck = nil
+        revealTimeout?.cancel()
+        revealTimeout = nil
         guard !closing else { return }
         closing = true
         tab.close()
@@ -182,7 +224,40 @@ final class ExtensionPopover: NSObject, NSPopoverDelegate, TabDelegate {
     // MARK: TabDelegate
 
     func tab(_ tab: Tab, autoResizedTo size: NSSize) {
-        popover.contentSize = NSSize(width: max(size.width, 25), height: max(size.height, 25))
+        guard !fallbackEnabled else { return }
+        popover.contentSize = NSSize(width: max(size.width, Self.minSize.width), height: max(size.height, Self.minSize.height))
+        latestSize = size
+        guard !closing else { return }
+        guard size.width < Self.collapsedWidthThreshold, size.height >= Self.maxSize.height else {
+            collapseCheck?.cancel()
+            collapseCheck = nil
+            reveal()
+            return
+        }
+        guard collapseCheck == nil else { return }
+
+        // Some popups, like Bitwarden, set a width only when they detect a Chrome
+        // popup. Here chrome.tabs.getCurrent() returns a tab, so they lay out at
+        // their narrowest width, pushing their height to the limit. If they stay
+        // narrow and at the maximum height, stop sizing to the page and give
+        // them a fixed size.
+        let check = DispatchWorkItem { [weak self] in
+            guard let self, !self.closing, !self.fallbackEnabled,
+                  self.latestSize.width < Self.collapsedWidthThreshold,
+                  self.latestSize.height >= Self.maxSize.height else { return }
+            self.collapseCheck = nil
+            self.fallbackEnabled = true
+            self.tab.disableAutoResize()
+            self.popover.contentSize = Self.fallbackSize
+            var fixedSizeIDs = defaults.stringArray(forKey: Self.fixedSizeDefaultsKey) ?? []
+            if !fixedSizeIDs.contains(self.manifest.id) {
+                fixedSizeIDs.append(self.manifest.id)
+                defaults.set(fixedSizeIDs, forKey: Self.fixedSizeDefaultsKey)
+            }
+            self.reveal()
+        }
+        collapseCheck = check
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.collapseCheckDelay, execute: check)
     }
 
     func tab(_ tab: Tab, openInNewTab url: String, background: Bool) {
@@ -191,6 +266,10 @@ final class ExtensionPopover: NSObject, NSPopoverDelegate, TabDelegate {
 
     /// The popover closed, or the page called window.close().
     func tabReadyToClose(_ tab: Tab) {
+        collapseCheck?.cancel()
+        collapseCheck = nil
+        revealTimeout?.cancel()
+        revealTimeout = nil
         closing = true
         tab.detach()
         tab.hostView.removeFromSuperview()

@@ -252,6 +252,9 @@ final class Tab {
             browserID, Int32(min.width), Int32(min.height), Int32(max.width), Int32(max.height))
     }
 
+    /// Stops sizing the browser to its page; it follows the view's size again.
+    func disableAutoResize() { tiller_browser_disable_auto_resize(browserID) }
+
     /// Runs `code` in the main frame. Does nothing once the tab has closed.
     func executeJavaScript(_ code: String) { tiller_browser_execute_js(browserID, code) }
 
@@ -373,6 +376,9 @@ final class Tab {
         MainActor.assumeIsolated {
             guard let pointer = UnsafeRawPointer(bitPattern: event) else { return false }
             let event = Unmanaged<NSEvent>.fromOpaque(pointer).takeUnretainedValue()
+            // CEF can pair a key event with a mouse NSEvent, and reading the
+            // characters of a non-key event raises an AppKit assertion.
+            guard event.type == .keyDown else { return false }
             return delegate?.tab(self, performKeyEquivalent: event) ?? false
         }
     }
