@@ -22,8 +22,10 @@ pub extern "C" fn tiller_core_version() -> *const c_char {
 /// with Chromium's own files in `data_dir`, the folder holding the profiles,
 /// the global request context's data in `cache_path` inside it, and the
 /// extension folders in `extensions`, one per line, which every profile
-/// loads. Must be the first thing `main` does, before anything touches
-/// `NSApp`. Returns 0 on success, or a nonzero exit code.
+/// loads. When `remote_debugging_port` is positive, it also enables Chromium's
+/// CDP endpoint on that port unless the command line sets its own port. Must
+/// be the first thing `main` does, before anything touches `NSApp`. Returns 0
+/// on success, or a nonzero exit code.
 ///
 /// # Safety
 /// `data_dir`, `cache_path` and `extensions` must be NUL-terminated UTF-8
@@ -33,6 +35,7 @@ pub unsafe extern "C" fn tiller_core_start(
     data_dir: *const c_char,
     cache_path: *const c_char,
     extensions: *const c_char,
+    remote_debugging_port: c_int,
 ) -> c_int {
     let root = unsafe { cstr(data_dir) };
     let cache_path = unsafe { cstr(cache_path) };
@@ -46,6 +49,7 @@ pub unsafe extern "C" fn tiller_core_start(
     // can't be passed. The app leaves those out.
     let extensions = unsafe { cstr(extensions) };
     let _ = browser::EXTENSIONS.set(extensions.lines().filter(|l| !l.is_empty()).collect::<Vec<_>>().join(","));
+    let _ = browser::REMOTE_DEBUGGING_PORT.set(remote_debugging_port);
     let Ok(exe) = std::env::current_exe() else {
         return 1;
     };

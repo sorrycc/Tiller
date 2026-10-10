@@ -77,6 +77,26 @@ tiller --profile work tabs         # another open profile's tabs
 
 The tool code is in `mcp/src/browser.rs`. `mcp/src/main.rs` wraps it as MCP and `mcp/src/bin/tiller.rs` as the CLI.
 
+## chrome-use and CDP
+
+Turn on **Settings > General > Allow remote debugging (CDP)** and restart Tiller. Chromium then exposes CDP at `127.0.0.1:9222`:
+
+```sh
+chrome-use connect 9222
+chrome-use open https://example.com
+chrome-use snapshot
+```
+
+Pages opened through CDP appear in separate Chromium-style windows and stay outside the Tiller tab bar. To take over a Tiller tab, use `chrome-use tab adopt <url|targetId>`.
+
+If another program is already using `127.0.0.1:9222`, Chromium falls back to the IPv6 loopback address `[::1]:9222`, while `chrome-use connect 9222` still reaches that program, not Tiller. Quit Tiller, then start it with another port:
+
+```sh
+open -a Tiller --args --remote-debugging-port=N
+```
+
+CDP gives any local process access to read and change pages and sign-in data in every profile, so leave the setting off when it is not needed.
+
 ## Debug launch arguments
 
 Debug builds (`scripts/bundle.sh debug`) accept extra launch arguments.

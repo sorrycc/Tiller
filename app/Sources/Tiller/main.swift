@@ -27,7 +27,9 @@ SingleProcessMigration.run()
 // same paths it was given.
 let firstCachePath = Profiles.cachePath(for: Launch.profiles[0])
 try? FileManager.default.createDirectory(atPath: firstCachePath, withIntermediateDirectories: true)
-let code = tiller_core_start(Profiles.chromiumRoot, firstCachePath, ExtensionStore.shared.launchArgument)
+let code = tiller_core_start(
+    Profiles.chromiumRoot, firstCachePath, ExtensionStore.shared.launchArgument, Settings.remoteDebuggingEnabled ? 9222 : 0
+)
 if code != 0 { exit(code) }
 
 let app = NSApplication.shared

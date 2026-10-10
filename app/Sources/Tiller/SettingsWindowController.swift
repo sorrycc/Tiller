@@ -4,7 +4,8 @@ import UniformTypeIdentifiers
 /// A profile's Settings window (Cmd+,), with General, Passwords, Extensions,
 /// Agent, Providers, Skills, Scheduled and Profiles panes. Every change is
 /// saved as it is made, in the profile, except the appearance, accent color,
-/// agent shortcut and extensions, which every profile shares.
+/// agent shortcut, updates, remote debugging and extensions, which every
+/// profile shares.
 @MainActor
 final class SettingsWindowController: NSWindowController {
     private let tabs = SettingsTabViewController()
@@ -426,6 +427,7 @@ final class GeneralSettingsPane: SettingsPane, NSTextFieldDelegate {
     private var tabLayoutPopUp: NSPopUpButton?
     private var appearancePopUp: NSPopUpButton?
     private var accentPopUp: NSPopUpButton?
+    private var remoteDebuggingButton: NSButton?
     private var searchPopUp: NSPopUpButton?
     private let templateField = NSTextField()
     private let templateNote = SettingsPane.note()
@@ -492,6 +494,14 @@ final class GeneralSettingsPane: SettingsPane, NSTextFieldDelegate {
         addRow("Accent color:", accentPopUp)
         addNote(Self.note("Selections, chat bubbles and busy dots. Pages follow the appearance."))
 
+        let remoteDebugging = NSButton(
+            checkboxWithTitle: "Allow remote debugging (CDP)", target: self, action: #selector(remoteDebuggingChanged(_:))
+        )
+        remoteDebugging.state = Settings.remoteDebuggingEnabled ? .on : .off
+        remoteDebuggingButton = remoteDebugging
+        Self.linkLabel(of: addRow("Remote debugging:", remoteDebugging), to: remoteDebugging)
+        addNote(Self.note("For every profile. Takes effect on next launch."))
+
         let searchPopUp = Self.popUp(
             SearchEngine.allCases, title: \.displayName, selected: settings.searchEngine,
             target: self, action: #selector(searchEngineChanged(_:))
@@ -537,6 +547,7 @@ final class GeneralSettingsPane: SettingsPane, NSTextFieldDelegate {
         tabLayoutPopUp?.selectItem(at: TabLayout.allCases.firstIndex(of: settings.tabLayout) ?? 0)
         appearancePopUp?.selectItem(at: Appearance.allCases.firstIndex(of: Settings.appearance) ?? 0)
         accentPopUp?.selectItem(at: AccentTheme.allCases.firstIndex(of: Settings.accentTheme) ?? 0)
+        remoteDebuggingButton?.state = Settings.remoteDebuggingEnabled ? .on : .off
         searchPopUp?.selectItem(at: SearchEngine.allCases.firstIndex(of: settings.searchEngine) ?? 0)
         showTemplateState()
     }
@@ -592,6 +603,10 @@ final class GeneralSettingsPane: SettingsPane, NSTextFieldDelegate {
     @objc private func accentChanged(_ sender: NSPopUpButton) {
         guard let theme = (sender.selectedItem?.representedObject as? String).flatMap(AccentTheme.init) else { return }
         Settings.accentTheme = theme
+    }
+
+    @objc private func remoteDebuggingChanged(_ sender: NSButton) {
+        Settings.remoteDebuggingEnabled = sender.state == .on
     }
 
     /// A dot of `color` for a pop-up item. Drawn on demand, so it follows
