@@ -294,10 +294,11 @@ final class AgentSession {
             prompt: prompt,
             options: options
         )
+        if kind == .codex, let providerConfig { process.arguments? += providerConfig.codexArguments }
         let directory = try self.directory ?? AgentEnvironment.workingDirectory(profile: profile)
         self.directory = directory
         process.currentDirectoryURL = directory
-        var environment = try AgentEnvironment.environment(for: kind, chat: chat, profile: profile)
+        var environment = try AgentEnvironment.environment(for: kind, chat: chat, profile: profile, provider: providerConfig)
         providerConfig?.apply(to: &environment, model: options.model)
         process.environment = environment
 
@@ -630,7 +631,10 @@ final class AgentSession {
     }
 
     private func requestCodexThread(cwd: URL) throws {
-        var params = AgentEnvironment.codexThreadParams(cwd: cwd, tools: tools, settings: profile.settings, options: options)
+        var params = AgentEnvironment.codexThreadParams(
+            cwd: cwd, tools: tools, settings: profile.settings, options: options,
+            provider: provider.flatMap { profile.providers.provider($0) }
+        )
         if let sessionID {
             // Tiller shows its own copy of the transcript.
             params["threadId"] = sessionID
@@ -1157,7 +1161,7 @@ enum AgentEnvironment {
         return shell.terminationStatus == 0 && !path.isEmpty ? path : nil
     }
 
-    static func environment(for kind: AgentKind, chat: String, profile: ProfileContext) throws -> [String: String] {
+    static func environment(for kind: AgentKind, chat: String, profile: ProfileContext, provider: AgentProvider? = nil) throws -> [String: String] {
         var env = ProcessInfo.processInfo.environment
         let path = env["PATH"] ?? "/usr/bin:/bin:/usr/sbin:/sbin"
         env["PATH"] = (searchDirectories + [path]).joined(separator: ":")
@@ -1167,7 +1171,7 @@ enum AgentEnvironment {
         env["TILLER_SOCKET"] = profile.socketPath
         // Tells Tiller which chat a tool call comes from.
         env["TILLER_CHAT"] = chat
-        if kind == .codex { env["CODEX_HOME"] = try codexHome(profile: profile) }
+        if kind == .codex { env["CODEX_HOME"] = try codexHome(profile: profile, requiresLogin: provider == nil) }
         // Tiller's block in grok's config.toml takes the skill library from here.
         if kind == .grok { env["TILLER_SKILLS"] = profile.skills.exposedSkills }
         return env
@@ -1266,16 +1270,18 @@ enum AgentEnvironment {
     /// Codex's own folder for Tiller, so the user's config.toml, MCP servers,
     /// plugins and hooks don't load. Its auth.json links to the user's, so
     /// Codex uses their login, and a token refresh writes through the link.
-    private static func codexHome(profile: ProfileContext) throws -> String {
+    /// Providers can run without that login.
+    private static func codexHome(profile: ProfileContext, requiresLogin: Bool) throws -> String {
         let userHome = ProcessInfo.processInfo.environment["CODEX_HOME"] ?? NSHomeDirectory() + "/.codex"
         let userAuth = userHome + "/auth.json"
-        guard FileManager.default.fileExists(atPath: userAuth) else {
+        let hasAuth = FileManager.default.fileExists(atPath: userAuth)
+        if requiresLogin && !hasAuth {
             throw ControlError("Codex isn't logged in. Run codex login in Terminal, then send the message again.")
         }
         let home = profile.folder + "/codex"
         try FileManager.default.createDirectory(atPath: home, withIntermediateDirectories: true)
         let link = home + "/auth.json"
-        if (try? FileManager.default.destinationOfSymbolicLink(atPath: link)) != userAuth {
+        if hasAuth && (try? FileManager.default.destinationOfSymbolicLink(atPath: link)) != userAuth {
             try? FileManager.default.removeItem(atPath: link)
             try FileManager.default.createSymbolicLink(atPath: link, withDestinationPath: userAuth)
         }
@@ -1289,10 +1295,11 @@ enum AgentEnvironment {
     /// the working folder, and running commands lifts the sandbox, as Claude
     /// Code's Bash isn't sandboxed either.
     /// `options` picks the model, its effort and its service tier; with no
-    /// model, the one Codex lists as its default, so a thread that ran
-    /// another goes back to it.
+    /// model, the provider's first or the one Codex lists as its default, so a
+    /// thread that ran another goes back to it. Providers omit the service tier.
     static func codexThreadParams(
-        cwd: URL, tools: [AgentTool], settings: ProfileSettings, options: AgentModelOptions = AgentModelOptions()
+        cwd: URL, tools: [AgentTool], settings: ProfileSettings, options: AgentModelOptions = AgentModelOptions(),
+        provider: AgentProvider? = nil
     ) -> [String: Any] {
         var config: [String: Any] = [
             "mcp_servers": [
@@ -1320,9 +1327,12 @@ enum AgentEnvironment {
             "developerInstructions": systemPrompt(tools: tools, settings: settings),
             "config": config,
         ]
-        if let model = options.model ?? AgentModelCatalog.codexModel(nil)?.id { params["model"] = model }
-        // Standard speed unless fast is on, so a resumed thread doesn't keep a tier it had.
-        params["serviceTier"] = options.fast ? (AgentKind.codex.fastTier(model: options.model) ?? "priority") : "default"
+        let defaultModel = provider == nil ? AgentModelCatalog.codexModel(nil)?.id : provider?.models.first
+        if let model = options.model ?? defaultModel { params["model"] = model }
+        if provider == nil {
+            // Standard speed unless fast is on, so a resumed thread doesn't keep a tier it had.
+            params["serviceTier"] = options.fast ? (AgentKind.codex.fastTier(model: options.model) ?? "priority") : "default"
+        }
         return params
     }
 

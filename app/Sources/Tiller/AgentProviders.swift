@@ -2,9 +2,9 @@ import AppKit
 import Security
 
 /// An endpoint the user added for an agent CLI, such as DeepSeek's
-/// Anthropic-compatible API for Claude Code. Chats on it run the same CLI,
-/// pointed at `baseURL` with the provider's key and models. The key is kept
-/// in the Keychain, not here.
+/// Anthropic-compatible API for Claude Code, or a relay's Responses API for
+/// Codex. Chats on it run the same CLI, pointed at `baseURL` with the
+/// provider's key and models. The key is kept in the Keychain, not here.
 struct AgentProvider: Codable, Equatable {
     /// Which header the key goes in: Claude Code sends `ANTHROPIC_API_KEY` as
     /// `x-api-key` and `ANTHROPIC_AUTH_TOKEN` as a Bearer token.
@@ -29,7 +29,7 @@ struct AgentProvider: Codable, Equatable {
 
     let id: String
     var name: String
-    /// The CLI it runs. Only Claude Code for now.
+    /// The CLI it runs.
     var kind: AgentKind
     var baseURL: String
     /// The first is used when the chat picks none.
@@ -38,14 +38,56 @@ struct AgentProvider: Codable, Equatable {
     /// `KEY=VALUE` lines, set after Tiller's own variables.
     var extraEnvironment: String
 
-    init(name: String, baseURL: String, models: [String], auth: Auth, extraEnvironment: String) {
+    init(name: String, kind: AgentKind = .claude, baseURL: String, models: [String], auth: Auth, extraEnvironment: String) {
         id = UUID().uuidString
         self.name = name
-        kind = .claude
+        self.kind = kind
         self.baseURL = baseURL
         self.models = models
         self.auth = auth
         self.extraEnvironment = extraEnvironment
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, name, kind, baseURL, models, auth, extraEnvironment
+    }
+
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        id = try values.decode(String.self, forKey: .id)
+        name = try values.decode(String.self, forKey: .name)
+        kind = try values.decodeIfPresent(AgentKind.self, forKey: .kind) ?? .claude
+        baseURL = try values.decode(String.self, forKey: .baseURL)
+        models = try values.decode([String].self, forKey: .models)
+        auth = try values.decode(Auth.self, forKey: .auth)
+        extraEnvironment = try values.decode(String.self, forKey: .extraEnvironment)
+    }
+
+    /// Codex's provider overrides, after `app-server`. The key stays in the environment.
+    var codexArguments: [String] {
+        guard kind == .codex else { return [] }
+        let values = [
+            ("model_provider", "tiller"),
+            ("model_providers.tiller.name", name),
+            ("model_providers.tiller.base_url", baseURL),
+            ("model_providers.tiller.env_key", "TILLER_PROVIDER_API_KEY"),
+            ("model_providers.tiller.wire_api", "responses"),
+        ]
+        return values.flatMap { ["-c", "\($0.0)=\(Self.tomlString($0.1))"] }
+    }
+
+    /// A TOML basic string, including control characters pasted into a field.
+    private static func tomlString(_ value: String) -> String {
+        var result = "\""
+        for scalar in value.unicodeScalars {
+            switch scalar.value {
+            case 0x22: result += "\\\""
+            case 0x5C: result += "\\\\"
+            case 0...0x1F, 0x7F: result += String(format: "\\u%04X", scalar.value)
+            default: result.unicodeScalars.append(scalar)
+            }
+        }
+        return result + "\""
     }
 
     /// `extraEnvironment` read as variables. Blank lines and `#` comments are
@@ -69,8 +111,14 @@ struct AgentProvider: Codable, Equatable {
     /// The variables Claude Code runs with on this provider: its URL and key,
     /// and `model` (or the provider's first) for every model role, so
     /// background requests such as titles don't ask it for a Claude model.
+    /// Codex gets its key as `TILLER_PROVIDER_API_KEY`.
     /// Then the extra ones, which can override any of them.
     func apply(to env: inout [String: String], model: String?) {
+        if kind == .codex {
+            env["TILLER_PROVIDER_API_KEY"] = AgentProviderKeychain.read(id)
+            for (key, value) in Self.variables(in: extraEnvironment) { env[key] = value }
+            return
+        }
         for key in env.keys where key.hasPrefix("ANTHROPIC_") { env[key] = nil }
         env["ANTHROPIC_BASE_URL"] = baseURL
         if let key = AgentProviderKeychain.read(id), !key.isEmpty { env[auth.variable] = key }
@@ -218,7 +266,7 @@ enum AgentProviderKeychain {
 }
 
 /// What a chat or schedule runs: a CLI, on its own login or on a provider
-/// the user added. Saved as the CLI's name, or `claude:<provider id>`.
+/// the user added. Saved as the CLI's name, or `<kind>:<provider id>`.
 struct AgentChoice: Hashable, RawRepresentable {
     var kind: AgentKind
     /// The provider's id. Nil uses the CLI's own setup.

@@ -1,6 +1,6 @@
 import AppKit
 
-/// Settings > Providers: endpoints the user added for Claude Code, each
+/// Settings > Providers: endpoints the user added for Claude Code or Codex, each
 /// picked like an agent of its own in the panel, Settings and schedules.
 final class ProvidersSettingsPane: NSViewController, NSTableViewDataSource, NSTableViewDelegate, NSMenuItemValidation {
     private let table = SettingsTableView()
@@ -75,7 +75,7 @@ final class ProvidersSettingsPane: NSViewController, NSTableViewDataSource, NSTa
         NotificationCenter.default.addObserver(self, selector: #selector(reload(_:)), name: .agentProvidersDidChange, object: store)
         reload(nil)
         SettingsPane.show(
-            "Run Claude Code against another Anthropic-compatible API, such as DeepSeek's. Each provider shows "
+            "Run Claude Code against an Anthropic-compatible API, or Codex against an OpenAI Responses-compatible API. Each provider shows "
                 + "as an agent of its own in the panel's menu, with its own models. Keys are kept in the Keychain.",
             in: note
         )
@@ -101,7 +101,7 @@ final class ProvidersSettingsPane: NSViewController, NSTableViewDataSource, NSTa
         guard providers.indices.contains(row) else { return nil }
         let provider = providers[row]
         let text = switch column?.identifier.rawValue {
-        case "name": provider.name
+        case "name": "\(provider.name) (\(provider.kind.displayName))"
         case "url": provider.baseURL
         default: provider.models.joined(separator: ", ")
         }
@@ -179,7 +179,10 @@ final class ProviderEditorController: NSViewController {
     private let nameField = NSTextField()
     private let urlField = NSTextField()
     private let keyField = NSSecureTextField()
+    private let kindPopUp = NSPopUpButton()
     private let authPopUp = NSPopUpButton()
+    private var authRow: NSGridRow?
+    private var authNoteRow: NSGridRow?
     private let modelsField = NSTextField()
     private var envView: NSTextView!
     private let errorNote = SettingsPane.note()
@@ -204,7 +207,15 @@ final class ProviderEditorController: NSViewController {
         nameField.stringValue = provider?.name ?? ""
         nameField.placeholderString = "DeepSeek"
         addRow("Name:", nameField)
-        addRow("Runs:", NSTextField(labelWithString: AgentKind.claude.displayName))
+        for kind in [AgentKind.claude, .codex] {
+            kindPopUp.addItem(withTitle: kind.displayName)
+            kindPopUp.lastItem?.representedObject = kind.rawValue
+        }
+        kindPopUp.selectItem(at: provider?.kind == .codex ? 1 : 0)
+        kindPopUp.isEnabled = provider == nil
+        kindPopUp.target = self
+        kindPopUp.action = #selector(kindChanged(_:))
+        addRow("Agent:", kindPopUp)
 
         urlField.stringValue = provider?.baseURL ?? ""
         urlField.placeholderString = "https://api.deepseek.com/anthropic"
@@ -219,8 +230,9 @@ final class ProviderEditorController: NSViewController {
             authPopUp.lastItem?.representedObject = auth.rawValue
         }
         authPopUp.selectItem(at: AgentProvider.Auth.allCases.firstIndex(of: provider?.auth ?? .apiKey) ?? 0)
-        addRow("Send key as:", authPopUp)
+        authRow = addRow("Send key as:", authPopUp)
         addNote(SettingsPane.note("ANTHROPIC_API_KEY or ANTHROPIC_AUTH_TOKEN. Check the provider's docs."))
+        authNoteRow = grid.row(at: grid.numberOfRows - 1)
 
         modelsField.stringValue = provider?.models.joined(separator: ", ") ?? ""
         modelsField.placeholderString = "deepseek-chat, deepseek-reasoner"
@@ -286,6 +298,7 @@ final class ProviderEditorController: NSViewController {
             buttons.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -20),
         ])
         self.view = view
+        kindChanged(nil)
         view.layoutSubtreeIfNeeded()
         preferredContentSize = view.fittingSize
     }
@@ -293,6 +306,21 @@ final class ProviderEditorController: NSViewController {
     override func viewDidAppear() {
         super.viewDidAppear()
         view.window?.makeFirstResponder(nameField)
+    }
+
+    private var selectedKind: AgentKind {
+        (kindPopUp.selectedItem?.representedObject as? String).flatMap(AgentKind.init) ?? .claude
+    }
+
+    @objc private func kindChanged(_ sender: Any?) {
+        let codex = selectedKind == .codex
+        authRow?.isHidden = codex
+        authNoteRow?.isHidden = codex
+        nameField.placeholderString = codex ? "OpenAI Compatible" : "DeepSeek"
+        urlField.placeholderString = codex ? "https://example.com/v1" : "https://api.deepseek.com/anthropic"
+        modelsField.placeholderString = codex ? "gpt-5.4" : "deepseek-chat, deepseek-reasoner"
+        view.layoutSubtreeIfNeeded()
+        preferredContentSize = view.fittingSize
     }
 
     /// A labeled row; VoiceOver reads the label as the control's title.
@@ -325,7 +353,7 @@ final class ProviderEditorController: NSViewController {
         }
         guard !models.isEmpty else { return showError("Add at least one model.") }
         let auth = (authPopUp.selectedItem?.representedObject as? String).flatMap(AgentProvider.Auth.init) ?? .apiKey
-        var provider = original ?? AgentProvider(name: name, baseURL: url, models: models, auth: auth, extraEnvironment: "")
+        var provider = original ?? AgentProvider(name: name, kind: selectedKind, baseURL: url, models: models, auth: auth, extraEnvironment: "")
         provider.name = name
         provider.baseURL = url
         provider.models = models
