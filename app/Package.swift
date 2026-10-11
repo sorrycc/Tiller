@@ -22,5 +22,6 @@ let package = Package(
                 .linkedLibrary("c++"),
             ]
         ),
+        .testTarget(name: "TillerTests", dependencies: ["Tiller"]),
     ]
 )

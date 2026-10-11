@@ -17,6 +17,8 @@ beta shows what `## Unreleased` holds at the time.
   tab is loaded. Tab ids stay the same while a tab is unloaded.
 - Fixed a crash in the agent chat with a mouse attached, when a
   conversation grew to about one screen tall.
+- Back and forward mouse side buttons now navigate the selected tab,
+  including Logitech mice with standard button assignments.
 
 ## 0.1.5
 

@@ -54,6 +54,8 @@ Script popup windows (`window.open` with a size, as sign-in flows use) open as n
 
 | Shortcut | Action |
 |---|---|
+| Cmd+[ / Cmd+] | Back / forward in the selected tab |
+| Back / forward mouse side buttons | Back / forward in the selected tab, including Logitech mice with standard button assignments |
 | Cmd+R / Cmd+. | Reload / stop |
 | Cmd+P | Print the page, through the system print dialog |
 | Cmd+Option+I | Developer Tools, Chromium's, in a window of their own |

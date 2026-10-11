@@ -66,6 +66,13 @@ open build/Tiller.app --args -url https://example.com   # open a page at launch
 
 The script builds the Rust crates and the Swift app, then assembles an ad-hoc signed `build/Tiller.app`, which doesn't update itself. To keep the bundle small, it includes only the English and Chinese Chromium locales and omits SwiftShader, so there is no software rendering fallback when the GPU is unavailable.
 
+Run the native window tests after building the Rust library (with `CEF_PATH` set as above):
+
+```sh
+cargo build --workspace
+swift test --package-path app -Xlinker -L"$PWD/target/debug"
+```
+
 ## Driving the browser
 
 Agents in the panel use Tiller's browser tools automatically. External agents and scripts can use the MCP server at `build/Tiller.app/Contents/MacOS/tiller_mcp`, or the `tiller` command-line tool, installed from Tiller > Install Command Line Tool…:

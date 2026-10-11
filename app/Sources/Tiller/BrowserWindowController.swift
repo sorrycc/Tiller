@@ -123,7 +123,7 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
         tabLayout = profile.settings.tabLayout
         agentPanel = AgentPanelView(profile: profile, frame: NSRect(x: 0, y: 0, width: 360, height: 600))
         agentPanelShown = profile.settings.defaults.bool(forKey: Self.agentVisibleKey)
-        let window = NSWindow(
+        let window = BrowserWindow(
             contentRect: NSRect(x: 0, y: 0, width: 1200, height: 800),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
@@ -137,6 +137,8 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
         window.setFrameAutosaveName(Self.autosaveName("TillerBrowserWindow", profile: profile))
         super.init(window: window)
 
+        window.onGoBack = { [weak self] in self?.goBack(nil) }
+        window.onGoForward = { [weak self] in self?.goForward(nil) }
         window.delegate = self
         splitView.isVertical = true
         splitView.dividerStyle = .thin
