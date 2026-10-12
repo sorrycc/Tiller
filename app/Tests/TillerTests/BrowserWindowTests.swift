@@ -5,20 +5,18 @@ import Testing
 @Suite(.serialized)
 @MainActor
 struct BrowserWindowTests {
-    private func makeWindow() -> BrowserWindow {
+    private func makeWindow() -> RecordingBrowserWindow {
         _ = NSApplication.shared
-        NSApp.setActivationPolicy(.regular)
-        let window = BrowserWindow(
+        let window = RecordingBrowserWindow(
             contentRect: NSRect(x: 0, y: 0, width: 300, height: 200),
             styleMask: [.titled], backing: .buffered, defer: false
         )
         window.isReleasedWhenClosed = false
-        window.contentView = MouseEventView(frame: NSRect(x: 0, y: 0, width: 300, height: 200))
-        window.makeKeyAndOrderFront(nil)
+        #expect(!window.isVisible)
         return window
     }
 
-    private func send(_ type: NSEvent.EventType, button: Int, to window: NSWindow) {
+    private func mouseEvent(_ type: NSEvent.EventType, button: Int, in window: NSWindow) -> NSEvent {
         let event = NSEvent.mouseEvent(
             with: type, location: NSPoint(x: 50, y: 50), modifierFlags: [],
             timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: window.windowNumber,
@@ -26,7 +24,14 @@ struct BrowserWindowTests {
         )!
         let cgEvent = event.cgEvent!
         cgEvent.setIntegerValueField(.mouseEventButtonNumber, value: Int64(button))
-        NSApp.sendEvent(NSEvent(cgEvent: cgEvent)!)
+        return NSEvent(cgEvent: cgEvent)!
+    }
+
+    @discardableResult
+    private func send(_ type: NSEvent.EventType, button: Int, to window: NSWindow) -> NSEvent {
+        let event = mouseEvent(type, button: button, in: window)
+        window.sendEvent(event)
+        return event
     }
 
     @Test(arguments: [3, 4])
@@ -45,37 +50,38 @@ struct BrowserWindowTests {
         #expect(back == (button == 3 ? 1 : 0))
         #expect(forward == (button == 4 ? 1 : 0))
         // A page must not also receive the click and navigate a second time.
-        #expect((window.contentView as! MouseEventView).buttons.isEmpty)
+        #expect(window.forwardedEvents.isEmpty)
     }
 
     @Test(arguments: [2, 5, 6])
-    func otherButtonsReachContent(button: Int) {
+    func otherButtonsAreForwardedToAppKit(button: Int) {
         let window = makeWindow()
         defer { window.close() }
         var navigations = 0
         window.onGoBack = { navigations += 1 }
         window.onGoForward = { navigations += 1 }
 
-        send(.otherMouseDown, button: button, to: window)
-        send(.otherMouseUp, button: button, to: window)
+        let down = send(.otherMouseDown, button: button, to: window)
+        let drag = send(.otherMouseDragged, button: button, to: window)
+        let up = send(.otherMouseUp, button: button, to: window)
         #expect(navigations == 0)
-        #expect((window.contentView as! MouseEventView).buttons == [button, button])
+        #expect(window.forwardedEvents == [down, drag, up])
     }
 
     @Test
-    func ordinaryClicksReachContent() {
+    func ordinaryClicksAreForwardedToAppKit() {
         let window = makeWindow()
         defer { window.close() }
         var navigations = 0
         window.onGoBack = { navigations += 1 }
         window.onGoForward = { navigations += 1 }
 
-        send(.leftMouseDown, button: 0, to: window)
-        send(.leftMouseUp, button: 0, to: window)
-        send(.rightMouseDown, button: 1, to: window)
-        send(.rightMouseUp, button: 1, to: window)
+        let leftDown = send(.leftMouseDown, button: 0, to: window)
+        let leftUp = send(.leftMouseUp, button: 0, to: window)
+        let rightDown = send(.rightMouseDown, button: 1, to: window)
+        let rightUp = send(.rightMouseUp, button: 1, to: window)
         #expect(navigations == 0)
-        #expect((window.contentView as! MouseEventView).buttons == [0, 0, 1, 1])
+        #expect(window.forwardedEvents == [leftDown, leftUp, rightDown, rightUp])
     }
 
     @Test
@@ -87,12 +93,18 @@ struct BrowserWindowTests {
         var secondBack = 0
         first.onGoBack = { firstBack += 1 }
         second.onGoBack = { secondBack += 1 }
-        first.makeKeyAndOrderFront(nil)
+        let down = mouseEvent(.otherMouseDown, button: 3, in: second)
+        let up = mouseEvent(.otherMouseUp, button: 3, in: second)
+        first.sendEvent(down)
+        first.sendEvent(up)
+        #expect(firstBack == 0 && secondBack == 0)
+        #expect(first.forwardedEvents == [down, up])
 
-        send(.otherMouseDown, button: 3, to: second)
-        send(.otherMouseUp, button: 3, to: second)
+        second.sendEvent(down)
+        second.sendEvent(up)
         #expect(firstBack == 0)
         #expect(secondBack == 1)
+        #expect(second.forwardedEvents.isEmpty)
     }
 
     @Test
@@ -111,6 +123,7 @@ struct BrowserWindowTests {
             send(.otherMouseUp, button: button, to: window)
         }
         #expect(navigations == 0)
+        #expect(window.forwardedEvents.isEmpty)
     }
 
     @Test
@@ -129,18 +142,15 @@ struct BrowserWindowTests {
             send(.otherMouseUp, button: button, to: window)
         }
         #expect(navigations == 0)
+        #expect(window.forwardedEvents.isEmpty)
     }
 }
 
 @MainActor
-private final class MouseEventView: NSView {
-    var buttons: [Int] = []
-    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
-    override func mouseDown(with event: NSEvent) { buttons.append(event.buttonNumber) }
-    override func mouseUp(with event: NSEvent) { buttons.append(event.buttonNumber) }
-    override func rightMouseDown(with event: NSEvent) { buttons.append(event.buttonNumber) }
-    override func rightMouseUp(with event: NSEvent) { buttons.append(event.buttonNumber) }
-    override func otherMouseDown(with event: NSEvent) { buttons.append(event.buttonNumber) }
-    override func otherMouseUp(with event: NSEvent) { buttons.append(event.buttonNumber) }
-    override func otherMouseDragged(with event: NSEvent) { buttons.append(event.buttonNumber) }
+private final class RecordingBrowserWindow: BrowserWindow {
+    var forwardedEvents: [NSEvent] = []
+
+    override func sendEventToAppKit(_ event: NSEvent) {
+        forwardedEvents.append(event)
+    }
 }

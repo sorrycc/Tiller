@@ -3,7 +3,7 @@ import AppKit
 /// Handles navigation buttons before Chromium's child view takes the event.
 /// Keeping this on the browser window also leaves Settings and popups alone.
 @MainActor
-final class BrowserWindow: NSWindow {
+class BrowserWindow: NSWindow {
     var onGoBack: (() -> Void)?
     var onGoForward: (() -> Void)?
 
@@ -12,7 +12,7 @@ final class BrowserWindow: NSWindow {
               event.type == .otherMouseDown || event.type == .otherMouseUp || event.type == .otherMouseDragged,
               event.buttonNumber == 3 || event.buttonNumber == 4
         else {
-            super.sendEvent(event)
+            sendEventToAppKit(event)
             return
         }
 
@@ -25,5 +25,10 @@ final class BrowserWindow: NSWindow {
         } else {
             onGoForward?()
         }
+    }
+
+    // 将 AppKit 分发边界独立出来，测试无需激活窗口或依赖视图命中测试。
+    func sendEventToAppKit(_ event: NSEvent) {
+        super.sendEvent(event)
     }
 }
