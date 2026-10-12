@@ -27,7 +27,8 @@ class BrowserWindow: NSWindow {
         }
     }
 
-    // 将 AppKit 分发边界独立出来，测试无需激活窗口或依赖视图命中测试。
+    // A separate dispatch boundary lets tests check forwarding without an
+    // active window or view hit-testing.
     func sendEventToAppKit(_ event: NSEvent) {
         super.sendEvent(event)
     }
