@@ -252,6 +252,11 @@ final class ExtensionStore {
     private(set) var entries: [Entry]
     /// What Tiller asked Chromium to load at launch, in list order.
     let loaded: [ExtensionManifest]
+    /// The last launch quit within moments of starting, so this one loads no
+    /// extensions. An extension opening a tab as Chromium starts can crash
+    /// CEF (chromiumembedded/cef#4285), and would again at every launch,
+    /// before Settings could switch it off. They load again at the next launch.
+    let skippedAfterCrash: Bool
     /// Why Chromium couldn't load some of them, by real path. Chromium writes
     /// these to its log while it starts, before any window opens.
     private lazy var loadErrors: [String: String] = Self.readLoadErrors()
@@ -271,6 +276,9 @@ final class ExtensionStore {
     private let path = ExtensionStore.listPath
     static let listPath = Profiles.root + "/extensions.json"
     static let folder = Profiles.root + "/Extensions"
+    /// There while a launch that loads extensions is starting. Still there at
+    /// the next launch, it means that one quit before `startedFine`.
+    private static let startingPath = Profiles.root + "/ExtensionsStarting"
 
     private init() {
         let data = try? Data(contentsOf: URL(fileURLWithPath: path))
@@ -280,9 +288,23 @@ final class ExtensionStore {
             guard let manifest = try? ExtensionManifest.read(entry.path) else { continue }
             loaded.append(manifest)
         }
+        let manager = FileManager.default
+        skippedAfterCrash = !loaded.isEmpty && manager.fileExists(atPath: Self.startingPath)
+        if skippedAfterCrash {
+            loaded = []
+            try? manager.removeItem(atPath: Self.startingPath)
+        } else if !loaded.isEmpty {
+            manager.createFile(atPath: Self.startingPath, contents: nil)
+        }
         self.loaded = loaded
         launchPaths = loaded.map(\.folder)
         Self.removeLater(unusedFolders())
+    }
+
+    /// The launch got past the moments after Chromium starts, when extensions
+    /// open their install pages, or quit normally.
+    func startedFine() {
+        try? FileManager.default.removeItem(atPath: Self.startingPath)
     }
 
     /// Deletes folders off the main thread. An unpacked extension can be

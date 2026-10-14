@@ -143,6 +143,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         DownloadStore.shared.start()
         Updater.shared.start()
+        // Extensions open their install pages within seconds of Chromium
+        // starting; a launch still running well after that started fine.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 20) {
+            MainActor.assumeIsolated { ExtensionStore.shared.startedFine() }
+        }
     }
 
     /// The first window to open asks about the default browser, and in debug
@@ -151,8 +156,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard let profile = notification.object as? ProfileContext else { return }
         guard !askedOnce else { return }
         askedOnce = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak profile] in
-            MainActor.assumeIsolated { DefaultBrowser.askOnce(on: profile?.window?.window) }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self, weak profile] in
+            MainActor.assumeIsolated {
+                // The default browser question waits for a launch without
+                // this notice.
+                if ExtensionStore.shared.skippedAfterCrash {
+                    self?.explainSkippedExtensions(on: profile?.window?.window)
+                } else {
+                    DefaultBrowser.askOnce(on: profile?.window?.window)
+                }
+            }
         }
         #if DEBUG
         runDebugArguments(profile)
@@ -160,6 +173,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private var askedOnce = false
+
+    /// Says why this launch has no extensions, and offers Settings to switch
+    /// off the one that crashed it.
+    private func explainSkippedExtensions(on window: NSWindow?) {
+        let alert = NSAlert()
+        alert.messageText = "Extensions Are Off for Now"
+        alert.informativeText = "Tiller quit unexpectedly right after it last opened, which an extension "
+            + "that opens a tab as Tiller starts can cause. Extensions load again the next time Tiller opens. "
+            + "To keep one from loading, switch it off in Extensions settings."
+        alert.addButton(withTitle: "Manage Extensions…")
+        alert.addButton(withTitle: "OK")
+        let handler: (NSApplication.ModalResponse) -> Void = { [weak self] response in
+            if response == .alertFirstButtonReturn { self?.manageExtensions(nil) }
+        }
+        if let window {
+            alert.beginSheetModal(for: window, completionHandler: handler)
+        } else {
+            handler(alert.runModal())
+        }
+    }
 
     #if DEBUG
     private func runDebugArguments(_ target: ProfileContext) {

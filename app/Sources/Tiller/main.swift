@@ -38,3 +38,4 @@ app.delegate = delegate
 app.setActivationPolicy(.regular)
 // CEF runs [NSApp run] and returns after the last browser closes.
 tiller_core_run()
+ExtensionStore.shared.startedFine()

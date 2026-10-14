@@ -1028,6 +1028,8 @@ final class ExtensionsSettingsPane: NSViewController, NSTableViewDataSource, NST
         let text: String
         if store.entries.isEmpty {
             text = "No extensions. Add an unpacked folder or a CRX file, or bring Chrome's over with Tiller > Import from Chrome…"
+        } else if store.skippedAfterCrash {
+            text = "Extensions are off until Tiller opens again, because it quit unexpectedly right after it last opened. Switch off any you don't want to load then."
         } else if store.needsRestart {
             text = "Changes apply the next time Tiller opens."
         } else {

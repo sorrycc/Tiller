@@ -7,6 +7,11 @@ beta shows what `## Unreleased` holds at the time.
 
 ## Unreleased
 
+- When Tiller quits unexpectedly right after opening, the next launch
+  starts without extensions and says so, with a link to Extensions
+  settings. An extension that opens a tab as Tiller starts could
+  otherwise crash it at every launch, before it could be switched off.
+
 ## 0.2.2
 
 - `window.open` without a size returns the new tab's window, so a page
