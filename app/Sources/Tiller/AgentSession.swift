@@ -1297,10 +1297,16 @@ enum AgentEnvironment {
         return shell.terminationStatus == 0 && !path.isEmpty ? path : nil
     }
 
-    static func environment(for kind: AgentKind, chat: String, profile: ProfileContext, provider: AgentProvider? = nil) throws -> [String: String] {
+    nonisolated static func commandEnvironment(socket: String) -> [String: String] {
         var env = ProcessInfo.processInfo.environment
         let path = env["PATH"] ?? "/usr/bin:/bin:/usr/sbin:/sbin"
         env["PATH"] = (searchDirectories + [path]).joined(separator: ":")
+        env["TILLER_SOCKET"] = socket
+        return env
+    }
+
+    static func environment(for kind: AgentKind, chat: String, profile: ProfileContext, provider: AgentProvider? = nil) throws -> [String: String] {
+        var env = commandEnvironment(socket: profile.socketPath)
         // Set when Tiller itself was started from a Claude Code session.
         for key in ["CLAUDECODE", "CLAUDE_CODE_ENTRYPOINT", "CLAUDE_CODE_SSE_PORT"] { env[key] = nil }
         // Each profile has its own socket, so tiller_mcp is told which.

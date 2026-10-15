@@ -27,6 +27,7 @@ struct AgentSkill: Equatable, Sendable {
     enum Origin: Equatable, Sendable {
         /// Tiller's library for the profile.
         case library
+        case command
         /// One of the CLI's own folders, or a plugin's.
         case user
     }

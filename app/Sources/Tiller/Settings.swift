@@ -383,6 +383,16 @@ struct ProfileSettings: @unchecked Sendable {
         nonmutating set { defaults.set(newValue, forKey: "agentInstructions") }
     }
 
+    var agentCommands: [AgentCommand] {
+        get {
+            defaults.data(forKey: "agentCommands")
+                .flatMap { try? JSONDecoder().decode([AgentCommand].self, from: $0) } ?? []
+        }
+        nonmutating set {
+            defaults.set(try? JSONEncoder().encode(newValue), forKey: "agentCommands")
+        }
+    }
+
     /// Built-in tools the agent gets besides Tiller's. All off by default.
     func agentToolEnabled(_ tool: AgentTool) -> Bool {
         defaults.bool(forKey: tool.defaultsKey)

@@ -48,6 +48,26 @@ The library is in `agent-skills` in the [profile's folder](settings-and-data.md#
 
 Ask the agent to create a skill, or to change or improve one, and it uses three of Tiller's tools: `list_skills`, `read_skill` and `save_skill`. They work with built-in tools off. `save_skill` writes `SKILL.md` and any other files to the library, and when it updates a skill, files it doesn't mention stay. Only library skills can be changed: the agent can read skills in your own folders, but saving one by that name is refused until you add its folder in Settings > Skills.
 
+## Commands
+
+Settings > Agent > Commands holds shell command lines for this profile. Add, edit or remove them there. A name uses lowercase letters, digits and dashes, starts with a letter or digit, and is unique among commands. The command line cannot be empty.
+
+Send `/name text` from the panel's message field to run one. It runs immediately, even during an agent turn, without starting or sending anything to the agent. Attachments stay in the field. The `/` picker marks commands as **Command** and shows their command line. When a command and a skill share a name, the picker shows only the command and sending that name runs it.
+
+Tiller runs `/bin/zsh -lc <command line>` with its environment, the same added PATH directories used to find agent CLIs, and `TILLER_SOCKET` set to this profile's control socket. The login shell also reads its startup files. The message text is never inserted into the command line. Stdin contains one JSON object, then reaches EOF:
+
+```json
+{"text":"text","tab_id":1,"url":"https://example.com/","title":"Example","source":"tiller"}
+```
+
+`text` is the text after `/name`, trimmed. `tab_id` is the same id returned by `list_tabs`. The tab fields are omitted when no tab is selected. The command can use the `tiller` CLI to work on this profile.
+
+A transcript row shows `/name` and the text, with a spinner while running. On success it shows a check and the first five lines or 500 characters of stdout. On failure it shows a cross, stderr (or stdout when stderr is empty), and the exit status. After 60 seconds Tiller terminates the process and its process group and reports a timeout.
+
+Rows are saved with an existing chat. A command alone in a new chat does not start an agent session or save the chat; its rows stay for that tab's lifetime, and are saved if you later send an agent message.
+
+Commands can only be configured in Settings and called by messages the user sends from the field. Agents, pages, skills and schedules cannot add, change or call them. Scheduled prompts, queued messages, launch prompts, control socket requests and MCP requests use the agent send path even when their text starts with a command name.
+
 ## Scheduled prompts
 
 A scheduled prompt is a message the panel sends by itself. Settings > Scheduled lists them with when each runs next and how its last run went. Add… and Edit… open a sheet with the prompt's name, agent, model, built-in tools, when it runs, and the prompt itself. The model button there picks the run's [model and effort](#model-and-effort); until one is picked, runs follow Settings for the agent. Type `/` at the start of the prompt to pick a skill, as in the panel; Cmd+Return saves. Run Now sends the selected one at once, on or off, without moving its next run. The checkbox turns one off without removing it.

@@ -2044,6 +2044,11 @@ extension BrowserWindowController {
 // MARK: Agent panel
 
 extension BrowserWindowController {
+    func agentCommandContext(_ panel: AgentPanelView) -> [String: Any] {
+        guard let tab = selectedTab else { return [:] }
+        return ["tab_id": Int(tab.browserID), "url": tab.url, "title": tab.displayTitle]
+    }
+
     func agentPanelContext(_ panel: AgentPanelView) -> String {
         guard let tab = selectedTab else { return "[Tiller: no tab is open]" }
         return "[Tiller: selected tab \(tab.id), \"\(tab.displayTitle)\", \(tab.isBlank ? "about:blank" : tab.url)]"

@@ -7,6 +7,9 @@ beta shows what `## Unreleased` holds at the time.
 
 ## Unreleased
 
+- Settings > Agent has named shell commands, called with `/name text` from
+  the message field, with the text and selected tab sent as JSON on stdin.
+
 ## 0.3.2
 
 - Themes: Settings > General > Theme gives Tiller Claude's colors,

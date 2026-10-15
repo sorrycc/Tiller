@@ -44,7 +44,7 @@ final class SkillPicker: NSVisualEffectView {
         let starts = all.filter { $0.name.lowercased().hasPrefix(query) }
         let contains = query.isEmpty ? [] : all.filter { !$0.name.lowercased().hasPrefix(query) && $0.name.lowercased().contains(query) }
         let matches = Array((starts + contains).prefix(Self.maxRows))
-        if matches.map(\.name) != skills.map(\.name) {
+        if matches != skills {
             skills = matches
             selected = 0
             rows.forEach { $0.removeFromSuperview() }
@@ -137,7 +137,7 @@ private final class SkillPickerRow: NSView {
         let argumentHint = skill.argumentHint ?? ""
         name = NSTextField(labelWithString: "/" + skill.name)
         hint = NSTextField(labelWithString: argumentHint)
-        badge = NSTextField(labelWithString: skill.origin == .library ? "Tiller" : "")
+        badge = NSTextField(labelWithString: skill.origin == .command ? "Command" : skill.origin == .library ? "Tiller" : "")
         hasHint = !argumentHint.isEmpty
         super.init(frame: .zero)
         wantsLayer = true
@@ -155,7 +155,7 @@ private final class SkillPickerRow: NSView {
         hint.isHidden = !hasHint
         badge.font = .systemFont(ofSize: Theme.FontSize.caption, weight: .medium)
         badge.textColor = Theme.secondaryText
-        badge.isHidden = skill.origin != .library
+        badge.isHidden = skill.origin == .user
         let top = NSStackView(views: [name, hint, NSView(), badge])
         top.spacing = Self.spacing
         let description = NSTextField(labelWithString: skill.description.isEmpty ? " " : skill.description)

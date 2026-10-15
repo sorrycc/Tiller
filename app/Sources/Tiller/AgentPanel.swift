@@ -5,6 +5,7 @@ import Quartz
 protocol AgentPanelDelegate: AnyObject {
     /// The selected tab, described for the agent at the start of each message.
     func agentPanelContext(_ panel: AgentPanelView) -> String
+    func agentCommandContext(_ panel: AgentPanelView) -> [String: Any]
 }
 
 /// The side panel: pick an agent and chat with it, in up to a few tabs, each
@@ -151,6 +152,10 @@ final class AgentPanelView: NSView {
         chat.context = { [weak self] in
             guard let self else { return "" }
             return self.delegate?.agentPanelContext(self) ?? ""
+        }
+        chat.commandContext = { [weak self] in
+            guard let self else { return [:] }
+            return self.delegate?.agentCommandContext(self) ?? [:]
         }
         chat.onChange = { [weak self, weak chat] in
             guard let self, let chat else { return }

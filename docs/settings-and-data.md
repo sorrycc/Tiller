@@ -27,10 +27,13 @@ Tiller > Settings… (Cmd+,) opens the Settings of the front window's profile. I
 | Agent | Show and hide shortcut: click, then press a combination with Cmd or Ctrl. Delete clears it; one already in a menu is refused | Cmd+Shift+S | right away, for every profile |
 | Agent | Command: pick a CLI, then the file to run it from | empty, meaning look it up | next new chat |
 | Agent | Model: pick a CLI, then its model, thinking effort, context window and fast mode (see [Model and effort](agent.md#model-and-effort)) | the CLI's own | next new chat |
+| Agent | Commands: named shell command lines called from the message field (see [Commands](agent.md#commands)) | none | next send from the field |
 | Agent | Extra instructions, added after Tiller's system prompt | empty | next new chat |
 | Sites | Each site's camera and microphone choice: Ask, Allow or Block, or the site removed | none | the site's next request |
 | Skills | Each skill in the library: on or off, added from a folder, archive or Git, or removed | none | a chat's next agent start |
 | Scheduled | Each scheduled prompt: on or off, its name, agent, tools, rule and prompt, added, edited, run now or removed | none | right away |
+
+Commands are stored as JSON data under `agentCommands` in the profile's user defaults.
 
 Settings live in the profile's own user defaults, `dev.sorrycc.tiller.profile.<id>`. The shared ones, and window positions and sizes, stay in `dev.sorrycc.tiller`; each profile's window keeps its own place. Agents opening tabs with `new_tab` always get a blank page when they pass no URL, whatever the new tab setting says.
 

@@ -45,7 +45,7 @@ final class TranscriptView: NSView {
     func add(_ row: NSView) {
         hideThinking()
         activity = nil
-        if let call = row as? ToolRowView {
+        if let call = row as? ToolRowView, !call.tool.hasPrefix("/") {
             if let openGroup {
                 openGroup.add(call)
                 needsLayout = true
@@ -750,14 +750,14 @@ final class ToolRowView: NSView, TranscriptRow {
         case nil: .unfinished
         }
         showHeading()
-        if isError == true, !summary.isEmpty {
+        if isError == true || tool.hasPrefix("/"), !summary.isEmpty {
             let text = NSMutableAttributedString(attributedString: heading)
             text.append(NSAttributedString(string: "\n" + summary, attributes: [
                 .font: NSFont.systemFont(ofSize: 11),
-                .foregroundColor: Theme.danger,
+                .foregroundColor: isError == true ? Theme.danger : Theme.secondaryText,
             ]))
             label.attributedStringValue = text
-            label.maximumNumberOfLines = 3
+            label.maximumNumberOfLines = tool.hasPrefix("/") ? 7 : 3
             label.invalidateIntrinsicContentSize()
         } else if let ending, !summary.isEmpty {
             let text = NSMutableAttributedString(attributedString: heading)

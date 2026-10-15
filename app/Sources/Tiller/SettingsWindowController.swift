@@ -1411,6 +1411,7 @@ final class ExtensionsSettingsPane: NSViewController, NSTableViewDataSource, NST
 // MARK: Agent
 
 final class AgentSettingsPane: SettingsPane, NSTextFieldDelegate, NSTextViewDelegate {
+    private var commandsPane: CommandsSettingsPane?
     private var agentPopUp: NSPopUpButton?
     /// Picks which CLI's path `pathField` shows.
     private var pathKindPopUp: NSPopUpButton?
@@ -1576,6 +1577,12 @@ final class AgentSettingsPane: SettingsPane, NSTextFieldDelegate, NSTextViewDele
         row.rowAlignment = .none
         row.cell(at: 0).yPlacement = .top
         addNote(Self.note("Added after Tiller's prompt. Applies from the next new chat."))
+        let commands = CommandsSettingsPane(profile: profile)
+        addChild(commands)
+        commandsPane = commands
+        let commandsRow = addRow("Commands:", commands.view)
+        commandsRow.rowAlignment = .none
+        commandsRow.cell(at: 0).yPlacement = .top
     }
 
     override func viewWillAppear() {

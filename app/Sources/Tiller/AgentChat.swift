@@ -8,6 +8,7 @@ import Quartz
 final class AgentChatView: NSView, NSTextViewDelegate {
     /// The selected tab, described for the agent at the start of each message.
     var context: (() -> String)?
+    var commandContext: (() -> [String: Any])?
     /// Called when the title, status or agent changes, or a turn starts or ends.
     var onChange: (() -> Void)?
     /// Get the message field's model or tools button, to show the menu from.
@@ -62,7 +63,7 @@ final class AgentChatView: NSView, NSTextViewDelegate {
     private let emptyState = AgentEmptyState()
     private let composer = Composer()
     private lazy var skillCompletion = SkillCompletion(textView: composer.textView) { [weak self] in
-        self?.availableSkills ?? []
+        self?.availableCompletions ?? []
     }
     private let promptSearch = PromptSearch()
     /// Up and Down's place among the sent messages, nil while the field
@@ -472,7 +473,7 @@ final class AgentChatView: NSView, NSTextViewDelegate {
     func stopForTesting() { stopTurn() }
 
     /// Enter, or with `direct` Ctrl+Enter, in the message field.
-    func submitForTesting(direct: Bool) { submit(direct: direct) }
+    func submitForTesting(direct: Bool) { submit(direct: direct, allowsCommands: false) }
 
     /// Replaces the message field's text, as typing would, so the skill
     /// picker follows it.
@@ -489,7 +490,7 @@ final class AgentChatView: NSView, NSTextViewDelegate {
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
             MainActor.assumeIsolated {
                 self?.composer.text = text
-                self?.submit()
+                self?.submit(allowsCommands: false)
             }
         }
     }
@@ -501,7 +502,7 @@ final class AgentChatView: NSView, NSTextViewDelegate {
         if isBusy, composerIsEmpty {
             stopTurn()
         } else {
-            submit()
+            submit(allowsCommands: true)
         }
     }
 
@@ -542,12 +543,12 @@ final class AgentChatView: NSView, NSTextViewDelegate {
             if flags.contains(.option) || flags.contains(.shift) {
                 textView.insertNewlineIgnoringFieldEditor(nil)
             } else {
-                submit()
+                submit(allowsCommands: true)
             }
             return true
         // What Ctrl+Return is bound to.
         case #selector(NSResponder.insertLineBreak(_:)):
-            submit(direct: true)
+            submit(direct: true, allowsCommands: true)
             return true
         case #selector(NSResponder.insertNewlineIgnoringFieldEditor(_:)):
             textView.insertNewlineIgnoringFieldEditor(nil)
@@ -575,6 +576,14 @@ final class AgentChatView: NSView, NSTextViewDelegate {
         loadedSkills ?? AgentSkillCatalog.skills(for: kind, library: profile.skills)
     }
 
+    private var availableCompletions: [AgentSkill] {
+        let commands = profile.settings.agentCommands
+        let names = Set(commands.map(\.name))
+        return commands.map {
+            AgentSkill(name: $0.name, description: $0.commandLine, argumentHint: nil, path: nil, origin: .command)
+        } + availableSkills.filter { !names.contains($0.name) }
+    }
+
     /// The composer keeps its own undo, which a sent message clears.
     func undoManager(for view: NSTextView) -> UndoManager? {
         composer.undoManager
@@ -582,8 +591,14 @@ final class AgentChatView: NSView, NSTextViewDelegate {
 
     /// While a turn runs, the message is queued, or with `direct` sent as
     /// soon as the turn is stopped. Otherwise it goes after anything queued.
-    private func submit(direct: Bool = false) {
+    private func submit(direct: Bool = false, allowsCommands: Bool = false) {
         let text = composer.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if allowsCommands, let command = AgentCommand.called(by: text, in: profile.settings.agentCommands) {
+            composer.text = ""
+            skillCompletion.hide()
+            run(command, text: String(text.dropFirst(command.name.count + 1)).trimmingCharacters(in: .whitespacesAndNewlines))
+            return
+        }
         let images = composer.attachments
         let written = !text.isEmpty || !images.isEmpty
         guard written || (!isBusy && !queued.isEmpty) else { return }
@@ -689,6 +704,33 @@ final class AgentChatView: NSView, NSTextViewDelegate {
     func modelForTesting() { onModel?(composer.modelButton) }
     func toolsForTesting() { onTools?(composer.toolsButton) }
     #endif
+
+    private func run(_ command: AgentCommand, text: String) {
+        loadIfNeeded(now: true)
+        hideEmptyState()
+        let name = "/" + command.name
+        let row = ToolRowView(name: name, detail: text)
+        let index = records.count
+        records.append(.tool(name: name, detail: text, isError: nil, summary: ""))
+        saveRecords()
+        transcript.add(row)
+        scrollToBottom()
+        var payload = commandContext?() ?? [:]
+        payload["text"] = text
+        payload["source"] = "tiller"
+        let input = (try? JSONSerialization.data(withJSONObject: payload)) ?? Data()
+        let environment = AgentEnvironment.commandEnvironment(socket: profile.socketPath)
+        Task { [weak self] in
+            let result = await Task.detached {
+                AgentCommandRunner.run(command.commandLine, input: input, environment: environment)
+            }.value
+            guard let self else { return }
+            row.finish(isError: result.isError, summary: result.summary)
+            records[index] = .tool(name: name, detail: text, isError: result.isError, summary: result.summary)
+            saveRecords()
+            transcript.needsLayout = true
+        }
+    }
 
     // MARK: Queue
 
