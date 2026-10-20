@@ -7,7 +7,7 @@ How Tiller's browser features behave. Settings and storage are covered in [Setti
 | Shortcut | Action |
 |---|---|
 | Cmd+T | New tab |
-| Cmd+W | Close tab (the window closes with its last tab, and the app quits) |
+| Cmd+W | Close tab (the last tab is replaced by the configured new tab page) |
 | Cmd+Shift+W | Close window |
 | Cmd+Shift+T | Reopen the last closed tab where it was |
 | Cmd+Shift+] / Cmd+Shift+[, Cmd+Option+Right / Cmd+Option+Left, Ctrl+Tab / Ctrl+Shift+Tab | Next / previous tab |
@@ -23,7 +23,9 @@ Tabs share the row equally. When there are too many for their titles, they show 
 
 Settings > General > Show tabs, or View > Show Tab Sidebar, moves the tabs into a sidebar on the left. The address bar then takes their place in the toolbar, and the page sits as a card between the sidebar and the agent panel. A New Tab row follows the last tab, and the list scrolls when it is longer than the window. Drag the sidebar's edge to resize it, between 80 and 400 points. The button at its top, or View > Collapse Tab Sidebar (Ctrl+Cmd+S), collapses it to icons and expands it again. The width and the collapsed state are kept per profile.
 
-Tiller saves its open tabs as they change and opens them again at the next launch, whether it quit through Cmd+Q, a closed window, a closed last tab or a crash. Each tab reloads its last URL when you first select it, or when an agent or the `tiller` tool acts on it, so a launch with many tabs loads only the one in front. Back/forward history, scroll position and form contents aren't kept.
+Closing the last tab keeps its window and profile open and shows the page chosen in Settings > General > New tabs open with. The closed page joins the recently closed tabs, just like any other page. Cmd+Shift+W or the window's close button still closes the window; Cmd+Q quits Tiller.
+
+Tiller saves its open tabs as they change and opens them again at the next launch, whether it quit through Cmd+Q, a closed window or a crash. Each tab reloads its last URL when you first select it, or when an agent or the `tiller` tool acts on it, so a launch with many tabs loads only the one in front. Back/forward history, scroll position and form contents aren't kept.
 
 ### Unloading inactive tabs
 

@@ -7,6 +7,10 @@ beta shows what `## Unreleased` holds at the time.
 
 ## Unreleased
 
+- Closing the last tab keeps the window and profile open on the configured
+  new tab page. The closed page can still be reopened with Cmd+Shift+T;
+  closing a window or profile, or quitting Tiller, works as before.
+
 ## 0.4.1
 
 - On the start page, recently closed tabs with long titles line up with
