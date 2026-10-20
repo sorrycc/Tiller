@@ -502,8 +502,9 @@ final class BrowserWindowController: NSResponder, NSToolbarDelegate,
         if !closingAll && !tab.isBlank {
             profile.session.pushClosedTab(.init(url: tab.url, title: tab.title), at: index)
         }
-        // 最后一个标签确认关闭后，先创建默认页，再拆除旧浏览器的视图，
-        // 避免 CEF 因浏览器实例清零而退出。关闭窗口或 Profile 时不补页。
+        // A last tab closing on its own leaves the new tab page in its place.
+        // It opens before the old view goes, so CEF never runs out of
+        // browsers and quits. Closing the window or profile doesn't.
         if tabs.count == 1 && !closingAll {
             newTab(nil)
         }
