@@ -4,6 +4,16 @@
     <title>Tiller</title>
     <link>https://github.com/sorrycc/tiller/releases</link>
     <item>
+      <title>0.4.1</title>
+      <pubDate>Tue, 20 Oct 2026 09:17:11 GMT</pubDate>
+      <sparkle:version>155</sparkle:version>
+      <sparkle:shortVersionString>0.4.1</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <sparkle:fullReleaseNotesLink>https://github.com/sorrycc/Tiller/releases/tag/v0.4.1</sparkle:fullReleaseNotesLink>
+      <description>&lt;ul&gt;&lt;li&gt;On the start page, recently closed tabs with long titles line up with the others again.&lt;/li&gt;&lt;li&gt;The &lt;code&gt;tiller&lt;/code&gt; command-line tool does what Tiller's menus and Settings do. &lt;code&gt;tiller profile&lt;/code&gt; lists, opens, creates, renames, colors, labels, moves, closes and deletes profiles, and &lt;code&gt;--profile&lt;/code&gt; opens a closed profile, or starts Tiller, before it acts. New commands go back and forward, reload, stop, find text, zoom, save a PDF, duplicate, move and reopen tabs, close other tabs, and show the page's source or Developer Tools. &lt;code&gt;tiller history&lt;/code&gt;, &lt;code&gt;downloads&lt;/code&gt;, &lt;code&gt;settings&lt;/code&gt;, &lt;code&gt;sites&lt;/code&gt;, &lt;code&gt;passwords&lt;/code&gt;, &lt;code&gt;extensions&lt;/code&gt; and &lt;code&gt;import chrome&lt;/code&gt; manage those, &lt;code&gt;tiller agent send&lt;/code&gt; sends a message to an agent and prints its answer, &lt;code&gt;tiller skills&lt;/code&gt; and &lt;code&gt;tiller schedules&lt;/code&gt; manage the skill library and scheduled prompts, and &lt;code&gt;tiller show&lt;/code&gt; brings up the agent panel, downloads, the find bar or a Settings pane. &lt;code&gt;tiller &amp;lt;area&amp;gt; --help&lt;/code&gt; lists an area's commands.&lt;/li&gt;&lt;li&gt;An agent's chat that runs &lt;code&gt;tiller&lt;/code&gt; can still use the browser, history search, skills and schedules, but Tiller refuses its requests to manage profiles, settings, logins, extensions and the rest.&lt;/li&gt;&lt;li&gt;Agents get six more browser tools: back, forward, reload, finding text in the page, zoom and history search.&lt;/li&gt;&lt;/ul&gt;</description>
+      <enclosure url="https://github.com/sorrycc/Tiller/releases/download/v0.4.1/Tiller-0.4.1.zip" type="application/octet-stream" sparkle:edSignature="qR0fM8HfxWw9Fn14gaw0Cpb91b5eT1zob/xt0D2K4OCVSOCzru75NeXAJCq5zashLEA/L/nMZqfyb9CAclhSBg==" length="131137523" />
+    </item>
+    <item>
       <title>0.4.0</title>
       <pubDate>Mon, 19 Oct 2026 21:54:20 GMT</pubDate>
       <sparkle:version>152</sparkle:version>
