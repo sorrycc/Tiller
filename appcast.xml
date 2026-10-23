@@ -4,6 +4,16 @@
     <title>Tiller</title>
     <link>https://github.com/sorrycc/tiller/releases</link>
     <item>
+      <title>0.4.3</title>
+      <pubDate>Fri, 23 Oct 2026 02:15:52 GMT</pubDate>
+      <sparkle:version>166</sparkle:version>
+      <sparkle:shortVersionString>0.4.3</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <sparkle:fullReleaseNotesLink>https://github.com/sorrycc/Tiller/releases/tag/v0.4.3</sparkle:fullReleaseNotesLink>
+      <description>&lt;ul&gt;&lt;li&gt;The agent panel's message field is restyled after Codex's: a rounder card with more room around the text, whose edge firms up under the mouse and with focus instead of glowing in the accent, and a send button in the text's color. The thinking effort has a button of its own next to the model, which opens just the efforts, and the hint mentions &lt;code&gt;/&lt;/code&gt; for skills. The field eases taller and shorter as lines come and go, the send arrow lifts away as a message goes and turns into the stop square while the agent works, and images dragged over the field show a Drop images to attach hint. Reduce Motion turns the motion off.&lt;/li&gt;&lt;li&gt;A microphone button beside the send button starts dictation into the agent panel's message field. While the agent works, a short arc circles inside the stop button. The model and effort names, the tools button's tint and the field's hint fade into their new values, and the effort button fades in for a model that has efforts. Reduce Motion turns the motion off.&lt;/li&gt;&lt;li&gt;A &lt;code&gt;/name&lt;/code&gt; at the start of the agent panel's message field that calls a skill shows as a token, in the accent on a soft plate. The skill list rises in from the field and shows what was typed in the accent in each name, and a message taller than the field fades out at the edge with more text beyond it.&lt;/li&gt;&lt;li&gt;Type &lt;code&gt;@&lt;/code&gt; in the agent panel's message field to mention another open tab: pick one from the list, which shows each tab's icon and address, and its address goes in the message.&lt;/li&gt;&lt;li&gt;A small ring before the microphone button shows how much of the model's context window the chat takes, once the agent reports it, turning orange from 80% and red from 95%. Its tooltip gives the numbers.&lt;/li&gt;&lt;/ul&gt;</description>
+      <enclosure url="https://github.com/sorrycc/Tiller/releases/download/v0.4.3/Tiller-0.4.3.zip" type="application/octet-stream" sparkle:edSignature="84EBYzglW/tvhgJY7zMrPZ63cyoYgWZ9yk780ihEkFH/QpBQ9IkrXze2xaegDdPkOWyWsPgJlLsnAlcFLfyUDA==" length="131182050" />
+    </item>
+    <item>
       <title>0.4.2</title>
       <pubDate>Thu, 22 Oct 2026 06:36:48 GMT</pubDate>
       <sparkle:version>162</sparkle:version>
