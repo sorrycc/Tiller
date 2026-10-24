@@ -4,6 +4,16 @@
     <title>Tiller</title>
     <link>https://github.com/sorrycc/tiller/releases</link>
     <item>
+      <title>0.4.4</title>
+      <pubDate>Sat, 24 Oct 2026 13:10:27 GMT</pubDate>
+      <sparkle:version>170</sparkle:version>
+      <sparkle:shortVersionString>0.4.4</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <sparkle:fullReleaseNotesLink>https://github.com/sorrycc/Tiller/releases/tag/v0.4.4</sparkle:fullReleaseNotesLink>
+      <description>&lt;ul&gt;&lt;li&gt;Fix a crash when an extension opens a tab as it's added or as Tiller starts.&lt;/li&gt;&lt;li&gt;Pages an extension opens, such as its options or welcome page, open in a Tiller tab, not a Chromium window.&lt;/li&gt;&lt;li&gt;Extensions added from the Chrome Web Store join &lt;strong&gt;Settings &amp;gt; Extensions&lt;/strong&gt; and every profile at the next launch.&lt;/li&gt;&lt;/ul&gt;</description>
+      <enclosure url="https://github.com/sorrycc/Tiller/releases/download/v0.4.4/Tiller-0.4.4.zip" type="application/octet-stream" sparkle:edSignature="8NWODz3VjYEFBtJbJ7XZEV207Ln5ALcUXxKS0lW1Eatlljcge4YSmf8yGS8W/eo/ydu2re3NU1tnT1EXZRGLBQ==" length="131395834" />
+    </item>
+    <item>
       <title>0.4.3</title>
       <pubDate>Fri, 23 Oct 2026 02:15:52 GMT</pubDate>
       <sparkle:version>166</sparkle:version>
