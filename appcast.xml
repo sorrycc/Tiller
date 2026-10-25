@@ -4,6 +4,16 @@
     <title>Tiller</title>
     <link>https://github.com/sorrycc/tiller/releases</link>
     <item>
+      <title>0.5.1</title>
+      <pubDate>Sun, 25 Oct 2026 08:32:53 GMT</pubDate>
+      <sparkle:version>178</sparkle:version>
+      <sparkle:shortVersionString>0.5.1</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <sparkle:fullReleaseNotesLink>https://github.com/sorrycc/Tiller/releases/tag/v0.5.1</sparkle:fullReleaseNotesLink>
+      <description>&lt;ul&gt;&lt;li&gt;&lt;strong&gt;Settings &amp;gt; Scheduled&lt;/strong&gt; can stop a scheduled prompt's run while it works, or show its chat.&lt;/li&gt;&lt;li&gt;Removing a scheduled prompt in &lt;strong&gt;Settings &amp;gt; Scheduled&lt;/strong&gt; now also stops its run in progress.&lt;/li&gt;&lt;li&gt;Tab layout, the tab sidebar's width and collapsed state, and tab unloading are the same in every profile.&lt;/li&gt;&lt;li&gt;Settings in &lt;strong&gt;Settings &amp;gt; Agent&lt;/strong&gt; and &lt;strong&gt;Settings &amp;gt; Jev&lt;/strong&gt; now apply to every profile.&lt;/li&gt;&lt;li&gt;Custom providers in &lt;strong&gt;Settings &amp;gt; Providers&lt;/strong&gt; and skills in &lt;strong&gt;Settings &amp;gt; Skills&lt;/strong&gt; are shared by every profile.&lt;/li&gt;&lt;li&gt;Existing settings come from the default profile, and skills from all profiles are merged into one library.&lt;/li&gt;&lt;li&gt;Switching profiles no longer shows the last profile's tabs through the sidebar while its agent works.&lt;/li&gt;&lt;/ul&gt;</description>
+      <enclosure url="https://github.com/sorrycc/Tiller/releases/download/v0.5.1/Tiller-0.5.1.zip" type="application/octet-stream" sparkle:edSignature="wcBz9b78y2iDTgFIsRgLax+HsVHQuCUEYa+NpBalZOse6rsbSSy6AyDNmK66LxJvMksnJb05wtvMPpGqkiuHDw==" length="131405471" />
+    </item>
+    <item>
       <title>0.5.0</title>
       <pubDate>Sun, 25 Oct 2026 02:08:59 GMT</pubDate>
       <sparkle:version>174</sparkle:version>
