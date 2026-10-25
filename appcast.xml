@@ -4,6 +4,16 @@
     <title>Tiller</title>
     <link>https://github.com/sorrycc/tiller/releases</link>
     <item>
+      <title>0.5.0</title>
+      <pubDate>Sun, 25 Oct 2026 02:08:59 GMT</pubDate>
+      <sparkle:version>174</sparkle:version>
+      <sparkle:shortVersionString>0.5.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <sparkle:fullReleaseNotesLink>https://github.com/sorrycc/Tiller/releases/tag/v0.5.0</sparkle:fullReleaseNotesLink>
+      <description>&lt;ul&gt;&lt;li&gt;Extensions see Tiller's tabs and windows, so &lt;code&gt;chrome.tabs.query&lt;/code&gt; finds the current tab.&lt;/li&gt;&lt;li&gt;Extension popups that act on the current tab, such as a page clipper's, now find it.&lt;/li&gt;&lt;li&gt;Extensions can open, select and close Tiller tabs, so 1Password's sign-in tab can finish.&lt;/li&gt;&lt;li&gt;1Password unlocks with its Mac app and shows your items, instead of an endless sign-in page.&lt;/li&gt;&lt;li&gt;Extensions that talk to a Mac app, such as 1Password, can now connect to it, once the app trusts Tiller.&lt;/li&gt;&lt;/ul&gt;</description>
+      <enclosure url="https://github.com/sorrycc/Tiller/releases/download/v0.5.0/Tiller-0.5.0.zip" type="application/octet-stream" sparkle:edSignature="hQaMSKhZVfb5ojd7Mefvz17XUyE4XhC8yWztilX2KedKeD5/PwCkVRKASYCTbFo5t1IK7QgPWxZgyNBcQneADQ==" length="131402638" />
+    </item>
+    <item>
       <title>0.4.4</title>
       <pubDate>Sat, 24 Oct 2026 13:10:27 GMT</pubDate>
       <sparkle:version>170</sparkle:version>
