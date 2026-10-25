@@ -4,6 +4,16 @@
     <title>Tiller</title>
     <link>https://github.com/sorrycc/tiller/releases</link>
     <item>
+      <title>0.5.2</title>
+      <pubDate>Sun, 25 Oct 2026 10:37:45 GMT</pubDate>
+      <sparkle:version>180</sparkle:version>
+      <sparkle:shortVersionString>0.5.2</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <sparkle:fullReleaseNotesLink>https://github.com/sorrycc/Tiller/releases/tag/v0.5.2</sparkle:fullReleaseNotesLink>
+      <description>&lt;ul&gt;&lt;li&gt;Profile Tabs' rail shows its profiles again, instead of a blank strip at the window's left.&lt;/li&gt;&lt;/ul&gt;</description>
+      <enclosure url="https://github.com/sorrycc/Tiller/releases/download/v0.5.2/Tiller-0.5.2.zip" type="application/octet-stream" sparkle:edSignature="YtJ4kxVggb7ETihbxDPw6ed10zCptlqVMStljOMqHZB/dGV+QiotEtUjj7Gq26vE2UH4tc8VTyfr1NEpvFqeCQ==" length="131404553" />
+    </item>
+    <item>
       <title>0.5.1</title>
       <pubDate>Sun, 25 Oct 2026 08:32:53 GMT</pubDate>
       <sparkle:version>178</sparkle:version>
