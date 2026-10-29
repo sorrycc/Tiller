@@ -4,6 +4,16 @@
     <title>Tiller</title>
     <link>https://github.com/sorrycc/tiller/releases</link>
     <item>
+      <title>0.5.4</title>
+      <pubDate>Thu, 29 Oct 2026 11:02:21 GMT</pubDate>
+      <sparkle:version>187</sparkle:version>
+      <sparkle:shortVersionString>0.5.4</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <sparkle:fullReleaseNotesLink>https://github.com/sorrycc/Tiller/releases/tag/v0.5.4</sparkle:fullReleaseNotesLink>
+      <description>&lt;ul&gt;&lt;li&gt;Pressing &lt;code&gt;Esc&lt;/code&gt; while a video or page is full screen now exits full screen.&lt;/li&gt;&lt;li&gt;Links like &lt;code&gt;codex://&lt;/code&gt; or &lt;code&gt;mailto:&lt;/code&gt; now open in their app instead of showing &lt;code&gt;ERR_UNKNOWN_URL_SCHEME&lt;/code&gt;.&lt;/li&gt;&lt;li&gt;A page opening another app asks first, with &lt;strong&gt;Open&lt;/strong&gt;, &lt;strong&gt;Always Open&lt;/strong&gt; and &lt;strong&gt;Cancel&lt;/strong&gt;; typed addresses don't ask.&lt;/li&gt;&lt;li&gt;Sites allowed to always open an app are listed in &lt;strong&gt;Settings &amp;gt; Sites&lt;/strong&gt;, where removing one makes it ask again.&lt;/li&gt;&lt;li&gt;Links that open a new tab no longer sometimes show an empty page until closed and reopened.&lt;/li&gt;&lt;/ul&gt;</description>
+      <enclosure url="https://github.com/sorrycc/Tiller/releases/download/v0.5.4/Tiller-0.5.4.zip" type="application/octet-stream" sparkle:edSignature="Ts+kualbn1lleINgg4pPaIIkLGJaxhf1cfcGOCMEu/Sl6xWmuzhIAqfa5khRGadnLqQKWVnnr4ZgIXB66ZUpCg==" length="131419780" />
+    </item>
+    <item>
       <title>0.5.2</title>
       <pubDate>Sun, 25 Oct 2026 10:37:45 GMT</pubDate>
       <sparkle:version>180</sparkle:version>
