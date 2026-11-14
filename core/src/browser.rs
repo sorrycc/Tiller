@@ -38,6 +38,7 @@ pub struct Callbacks {
     pub media_requests_dropped: Option<unsafe extern "C" fn(*mut c_void)>,
     pub media_access_changed: Option<unsafe extern "C" fn(*mut c_void, bool, bool)>,
     pub external_url: Option<unsafe extern "C" fn(*mut c_void, *const c_char, *const c_char, bool) -> bool>,
+    pub copy_image: Option<unsafe extern "C" fn(*mut c_void, *const u8, usize)>,
 }
 
 /// A tab waiting for the browser CEF creates for a page's `window.open`.
@@ -1078,6 +1079,7 @@ const MENU_COPY_LINK: i32 = MENU_OPEN_LINK + 2;
 const MENU_OPEN_IMAGE: i32 = MENU_OPEN_LINK + 3;
 const MENU_COPY_IMAGE_ADDRESS: i32 = MENU_OPEN_LINK + 4;
 const MENU_INSPECT: i32 = MENU_OPEN_LINK + 5;
+const MENU_COPY_IMAGE: i32 = MENU_OPEN_LINK + 6;
 const VIEW_SOURCE: i32 = sys::cef_menu_id_t::MENU_ID_VIEW_SOURCE as i32;
 
 /// Opens Chromium's developer tools for the browser in a window of their own,
@@ -1121,6 +1123,7 @@ wrap_context_menu_handler! {
             }
             if flags & media != 0 && params.media_type() == ContextMenuMediaType::IMAGE {
                 items.push((MENU_OPEN_IMAGE, "Open Image in New Tab"));
+                items.push((MENU_COPY_IMAGE, "Copy Image"));
                 items.push((MENU_COPY_IMAGE_ADDRESS, "Copy Image Address"));
             }
             for (index, (id, label)) in items.iter().enumerate() {
@@ -1150,6 +1153,14 @@ wrap_context_menu_handler! {
                 MENU_COPY_LINK => copy_text(browser, &CefString::from(&params.link_url())),
                 // A foreground tab, as Safari and Chrome open it.
                 MENU_OPEN_IMAGE => open_in_tab(browser, Some(&CefString::from(&params.source_url())), false),
+                // Fetched again, from the cache when it can, as CEF can't
+                // copy the image the page shows.
+                MENU_COPY_IMAGE => {
+                    if let Some(browser) = browser && let Some(host) = browser.host() {
+                        let mut callback = TillerCopyImageCallback::new(browser.identifier());
+                        host.download_image(Some(&CefString::from(&params.source_url())), 0, 0, 0, Some(&mut callback));
+                    }
+                }
                 MENU_COPY_IMAGE_ADDRESS => copy_text(browser, &CefString::from(&params.source_url())),
                 // CEF's own View Source item, which does nothing on macOS.
                 VIEW_SOURCE => {
@@ -1376,6 +1387,26 @@ wrap_download_image_callback! {
                     clear_icon_url(self.browser_id, &url);
                     send_favicon(self.browser_id, &[]);
                 }
+            }
+        }
+    }
+}
+
+wrap_download_image_callback! {
+    struct TillerCopyImageCallback {
+        browser_id: i32,
+    }
+
+    impl DownloadImageCallback {
+        /// Hands the image, at its own size, to the Swift side for the
+        /// pasteboard. An image that didn't load copies nothing.
+        fn on_download_image_finished(&self, _image_url: Option<&CefString>, _http_status_code: i32, image: Option<&mut Image>) {
+            let (mut width, mut height) = (0, 0);
+            let png = image.and_then(|image| image.as_png(1.0, 1, Some(&mut width), Some(&mut height)));
+            if let Some(png) = png && png.size() > 0
+                && let Some(cb) = callbacks_for_id(self.browser_id) && let Some(f) = cb.copy_image
+            {
+                unsafe { f(cb.ctx, png.raw_data().cast::<u8>(), png.size()) };
             }
         }
     }

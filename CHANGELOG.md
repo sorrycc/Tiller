@@ -7,6 +7,8 @@ beta shows what `## Unreleased` holds at the time.
 
 ## Unreleased
 
+- Right-clicking an image now offers **Copy Image**, which puts the picture itself on the clipboard.
+
 ## 0.5.4
 
 - Pressing `Esc` while a video or page is full screen now exits full screen.

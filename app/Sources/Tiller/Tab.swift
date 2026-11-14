@@ -293,6 +293,14 @@ final class Tab {
                 guard let ctx, let url else { return false }
                 return Tab.from(ctx).externalURL(
                     String(cString: url), source: source.map { String(cString: $0) } ?? "", redirect: redirect)
+            },
+            copy_image: { ctx, png, len in
+                guard ctx != nil, let png, len > 0 else { return }
+                let data = Data(bytes: png, count: len)
+                MainActor.assumeIsolated {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setData(data, forType: .png)
+                }
             }
         )
     }

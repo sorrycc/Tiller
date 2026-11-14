@@ -62,6 +62,9 @@ typedef struct TillerBrowserCallbacks {
     // going from, or empty. Return true to call the navigation off, as for
     // a URL the app opens in another app; false lets it fail. May be NULL.
     bool (*external_url)(void *ctx, const char *url, const char *source, bool redirect);
+    // The page's context menu asked to copy an image, given as PNG data.
+    // May be NULL.
+    void (*copy_image)(void *ctx, const uint8_t *png, size_t len);
 } TillerBrowserCallbacks;
 
 // Static version string. Do not free.
